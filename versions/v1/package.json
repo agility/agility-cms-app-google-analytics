@@ -9,7 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@agility/app-sdk": "^1.0.0",
+    "@agility/app-sdk": "2.0.0-rc1",
     "@agility/management-sdk": "^0.1.13",
     "@analytics/google-analytics": "^1.0.5",
     "@headlessui/react": "^1.7.14",
