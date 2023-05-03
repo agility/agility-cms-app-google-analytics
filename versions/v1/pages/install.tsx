@@ -1,12 +1,13 @@
 import axios from "axios"
-import { useEffect, useState } from "react"
+import React, { useEffect, useState } from "react"
 import {
 	setExtraConfigValues,
 	useAgilityPreInstall,
 	IConfig
 } from "@agility/app-sdk"
 import "@agility/plenum-ui/lib/tailwind.css"
-import ComboBox from "./components/ComboBox"
+import ComboBox from "../components/ComboBox"
+
 
 type Property = {
 	id: string
@@ -22,13 +23,17 @@ export interface IOAuthToken {
 }
 
 export default function Install() {
+
+
 	const [properties, setProperties] = useState<Property[]>([])
 	const [profiles, setProfiles] = useState<Property[]>([])
 
 	const [selectedProperty, setSelectedProperty] = useState<Property | null>(null)
 	const [selectedProfile, setSelectedProfile] = useState<Property | null>(null)
 	const { configuration } = useAgilityPreInstall()
+
 	const [oAuthToken, setOAuthToken] = useState<IOAuthToken | null>(null)
+
 
 	// Get the auth token from the app install context
 	useEffect(() => {
