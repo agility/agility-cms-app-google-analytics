@@ -22,6 +22,8 @@ export interface IOAuthToken {
 	expiry_date: number
 }
 
+
+
 export default function Install() {
 
 
@@ -30,17 +32,19 @@ export default function Install() {
 
 	const [selectedProperty, setSelectedProperty] = useState<Property | null>(null)
 	const [selectedProfile, setSelectedProfile] = useState<Property | null>(null)
-	const { configuration } = useAgilityPreInstall()
+	//const {  } = useAgilityPreInstall()
+	const { initializing, appInstallContext, instance, locale } = useAgilityPreInstall()
 
 	const [oAuthToken, setOAuthToken] = useState<IOAuthToken | null>(null)
 
+	const configuration = appInstallContext?.configuration
 
 	// Get the auth token from the app install context
 	useEffect(() => {
 		if (!configuration) return
-		if (configuration.length === 0) return
 
-		const token = JSON.parse(configuration[0].Value ?? "{}") as IOAuthToken
+		const str = configuration["Google Analytics Account"]
+		const token = JSON.parse(str ?? "{}") as IOAuthToken
 		setOAuthToken(token)
 	}, [configuration])
 
@@ -111,13 +115,17 @@ export default function Install() {
 				Type: "GoogleAnalyticsProfileId"
 			}
 		]
-		const payload = [...configuration, ...extraConfigValues]
+		const payload = [...extraConfigValues]
 
 		const handleSetExtraConfigValues = async () => {
 			await setExtraConfigValues(payload)
 		}
 		handleSetExtraConfigValues()
 	}, [selectedProperty, selectedProfile, configuration])
+
+	if (initializing) {
+		return <div>Loading...</div>
+	}
 
 	return (
 		<div>

@@ -2,10 +2,10 @@
 # yarn lockfile v1
 
 
-"@agility/app-sdk@^2.0.0-rc9":
-  version "2.0.0-rc9"
-  resolved "https://registry.yarnpkg.com/@agility/app-sdk/-/app-sdk-2.0.0-rc9.tgz#796cff5f1fe4a2e19a6353541def80d8dc627606"
-  integrity sha512-gsHA2ukYtIaImmvbnbkgoWCNK0FAeLn16v+xLDoigQQdBBkRH6VwdJFNyg3hyt06UN4zHlSjjA7tJRuEeJghYQ==
+"@agility/app-sdk@^2.0.0-rc11":
+  version "2.0.0-rc11"
+  resolved "https://registry.yarnpkg.com/@agility/app-sdk/-/app-sdk-2.0.0-rc11.tgz#983668e825f6449c56b0670bce95880b888e1593"
+  integrity sha512-PPPw78ex+Mu2epaARmC+WdKRisVj/3CZ5wI2eeIWqIdWMZ6R9jEIyi+BAMjpCuDjQCMn9+4dw6ph2C9t9i/6+g==
 
 "@agility/management-sdk@^0.1.13":
   version "0.1.14"
