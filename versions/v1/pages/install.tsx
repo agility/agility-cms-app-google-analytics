@@ -1,13 +1,9 @@
 import axios from "axios"
-import React, { useEffect, useState } from "react"
-import {
-	setExtraConfigValues,
-	useAgilityPreInstall,
-	IConfig
-} from "@agility/app-sdk"
-import "@agility/plenum-ui/lib/tailwind.css"
-import ComboBox from "../components/ComboBox"
+import React, { useEffect, useMemo, useState } from "react"
+import { setExtraConfigValues, useAgilityPreInstall, IConfig } from "@agility/app-sdk"
 
+import ComboBox from "../components/ComboBox"
+import { Button, Select, SimpleSelectOptions } from "@agility/plenum-ui"
 
 type Property = {
 	id: string
@@ -22,11 +18,7 @@ export interface IOAuthToken {
 	expiry_date: number
 }
 
-
-
 export default function Install() {
-
-
 	const [properties, setProperties] = useState<Property[]>([])
 	const [profiles, setProfiles] = useState<Property[]>([])
 
@@ -96,12 +88,12 @@ export default function Install() {
 		return () => {}
 	}, [selectedProperty, oAuthToken])
 
-	useEffect(() => {
+	const extraConfigValues = useMemo(() => {
 		if (!selectedProperty) return
 		if (!selectedProfile) return
 		if (!configuration) return
 
-		const extraConfigValues: IConfig[] = [
+		return [
 			{
 				Name: "propertyId",
 				Value: selectedProperty.id,
@@ -114,13 +106,7 @@ export default function Install() {
 				Label: "Profile ID",
 				Type: "GoogleAnalyticsProfileId"
 			}
-		]
-		const payload = [...extraConfigValues]
-
-		const handleSetExtraConfigValues = async () => {
-			await setExtraConfigValues(payload)
-		}
-		handleSetExtraConfigValues()
+		] as IConfig[]
 	}, [selectedProperty, selectedProfile, configuration])
 
 	if (initializing) {
@@ -128,33 +114,56 @@ export default function Install() {
 	}
 
 	return (
-		<div>
-			<p className="mt-4 mb-4">Select a Google Analytics property and profile for us to get data from.</p>
+		<div className=" flex h-[100vh] flex-col ">
+			<div className="flex-1">
+				<p className="mb-4 mt-4">Select a Google Analytics property and profile for us to get data from.</p>
 
-			<div>
-				<div>Properties & Apps</div>
-				{properties && properties.length > 0 && (
-					<ComboBox
-						items={properties ?? []}
-						selectedItem={selectedProperty}
-						itemIdKey="id"
-						itemLabelKey="name"
-						setSelectedItem={setSelectedProperty}
-					/>
-				)}
+				<div className="p-1">
+					<div>Properties & Apps</div>
+					{properties && properties.length > 0 && (
+						<Select
+							label="Select a property"
+							options={
+								properties?.map((p) => ({
+									label: p.name,
+									value: p.id
+								})) || []
+							}
+							value={selectedProperty?.id ?? ""}
+							onChange={(value) => {
+								setSelectedProperty(properties.find((p) => p.id === value) || null)
+							}}
+						/>
+					)}
+				</div>
+
+				<div className="p-1">
+					<div>View</div>
+					{profiles && profiles.length > 0 && (
+						<Select
+							label="Select a View"
+							options={
+								profiles?.map((p) => ({
+									label: p.name,
+									value: p.id
+								})) || []
+							}
+							value={selectedProfile?.id ?? ""}
+							onChange={(value) => {
+								setSelectedProfile(profiles.find((p) => p.id === value) || null)
+							}}
+						/>
+					)}
+				</div>
 			</div>
 
 			<div>
-				<div>View</div>
-				{profiles && profiles.length > 0 && (
-					<ComboBox
-						items={profiles ?? []}
-						selectedItem={selectedProfile}
-						itemIdKey="id"
-						itemLabelKey="name"
-						setSelectedItem={setSelectedProfile}
-					/>
-				)}
+				<Button
+					label="Install"
+					isWidthFull
+					onClick={() => setExtraConfigValues(extraConfigValues || [])}
+					isDisabled={!extraConfigValues}
+				/>
 			</div>
 		</div>
 	)

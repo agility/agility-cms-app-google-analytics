@@ -3,7 +3,7 @@ import axios from "axios"
 import LineChartComponent, { Report } from "../components/GoogleLineChart"
 import GoogleAnalyticsLogo from "../components/GoogleAnalyticsLogo"
 import DurationPicker from "../components/DurationPicker"
-import "@agility/plenum-ui/lib/tailwind.css"
+
 import GoogleAnalyticPane from "../components/GoogleAnalyticsPanel"
 import { CHART_DURATIONS } from "@/constants"
 import { useAgilityAppSDK, setHeight } from "@agility/app-sdk"

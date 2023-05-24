@@ -1,5 +1,4 @@
 import Head from "next/head"
-import '@agility/plenum-ui/lib/tailwind.css';
 
 export default function Home() {
 	return (
