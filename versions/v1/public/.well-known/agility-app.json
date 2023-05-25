@@ -19,24 +19,9 @@
 		}
 	],
 	"capabilities": {
-
-
-		"contentItemSidebar": {
-			"description": "Shows analytics data for the current item."
-		},
-		"pageSidebar": {
-			"description": "Shows analytics data for the current page."
-		},
 		"homeDashboard": {
 			"description": "Shows analytics data for this instance."
 		},
-		"contentDashboard": {
-			"description": "Shows analytics data for this instance."
-		},
-		"pagesDashboard": {
-			"description": "Shows analytics data for this instance."
-		},
 		"installScreen": true
-
 	}
 }
