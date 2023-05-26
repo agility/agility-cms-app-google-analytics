@@ -12,6 +12,9 @@ import { IOAuthToken } from "./install"
 // function to get the cumulative number of users
 function getCumulativeUsers(report: Report) {
 	let cumulativeUsers = 0
+
+	if (!report?.data?.rows) return cumulativeUsers
+
 	report.data.rows.forEach((row) => {
 		cumulativeUsers += parseInt(row.metrics[0].values[0])
 	})
@@ -21,6 +24,7 @@ function getCumulativeUsers(report: Report) {
 // function to get the cumulative number of new users
 function getCumulativeNewUsers(report: Report) {
 	let cumulativeNewUsers = 0
+	if (!report?.data?.rows) return cumulativeNewUsers
 	report.data.rows.forEach((row) => {
 		cumulativeNewUsers += parseInt(row.metrics[0].values[1])
 	})
@@ -30,6 +34,7 @@ function getCumulativeNewUsers(report: Report) {
 // function to get the cumulative number of pageviews
 function getCumulativePageviews(report: Report) {
 	let cumulativePageviews = 0
+	if (!report?.data?.rows) return cumulativePageviews
 	report.data.rows.forEach((row) => {
 		cumulativePageviews += parseInt(row.metrics[0].values[2])
 	})
@@ -39,6 +44,7 @@ function getCumulativePageviews(report: Report) {
 // function to get the cumulative session duration in seconds
 function getCumulativeSessionDuration(report: Report) {
 	let cumulativeSessionDuration = 0
+	if (!report?.data?.rows) return cumulativeSessionDuration
 	report.data.rows.forEach((row) => {
 		cumulativeSessionDuration += parseInt(row.metrics[0].values[3])
 	})

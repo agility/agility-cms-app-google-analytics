@@ -62,7 +62,7 @@ function formatMonth(monthString: string): string | null {
   }
 
 const LineChartComponent: React.FC<Props> = ({ reportData, isNewUserViewSelected, isUserViewSelected, isPageDurationViewSelected, isPageViewSelected, duration }) => {
-	const data = reportData.data.rows.map((row) => {
+	const data = reportData?.data?.rows ? reportData?.data?.rows?.map((row) => {
 		return {
 			date: duration === CHART_DURATIONS["365daysAgo"] ? formatMonth(row.dimensions[0]) : formatDate(row.dimensions[0]),
 			users: parseInt(row.metrics[0].values[0]),
@@ -70,7 +70,7 @@ const LineChartComponent: React.FC<Props> = ({ reportData, isNewUserViewSelected
 			pageViews: parseInt(row.metrics[0].values[2]),
 			avgSessionDuration: Math.round(parseFloat(row.metrics[0].values[3])/60),
 		}
-	})
+	}) : []
 
 	return (
 		<ResponsiveContainer width={"96%"} height={360} >
