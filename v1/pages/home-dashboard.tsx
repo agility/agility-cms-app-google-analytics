@@ -91,7 +91,7 @@ export default function HomeDashboard() {
 	const [profileId, setProfileId] = useState<string | null>(null)
 
 	useEffect(() => {
-		setHeight({height: 600})
+		setHeight({height: 550})
 	}, [])
 
 	useEffect(() => {
