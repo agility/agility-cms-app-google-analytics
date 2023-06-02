@@ -24,7 +24,6 @@ export default function Install() {
 
 	const [selectedProperty, setSelectedProperty] = useState<Property | null>(null)
 	const [selectedProfile, setSelectedProfile] = useState<Property | null>(null)
-	//const {  } = useAgilityPreInstall()
 	const { initializing, appInstallContext, instance, locale } = useAgilityPreInstall()
 
 	const [oAuthToken, setOAuthToken] = useState<IOAuthToken | null>(null)

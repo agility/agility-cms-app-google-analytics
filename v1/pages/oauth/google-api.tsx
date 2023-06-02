@@ -81,8 +81,8 @@ export default function GoogleAPI() {
 	return (
 		<>
 			<Head>
-				<title>Example App</title>
-				<meta name="description" content="An example app showing the capabilities of the Agility App SDK v2" />
+				<title>Google Analytics</title>
+				<meta name="description" content="Integration for google analytics" />
 				<meta name="viewport" content="width=device-width, initial-scale=1" />
 				<link rel="icon" href="/favicon.ico" />
 			</Head>

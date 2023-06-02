@@ -53,8 +53,8 @@ const GoogleAnalyticPane: React.FC<IGoogleAnalyticPane> = ({ title, dataDisplay,
 			className="w-64 cursor-pointer bg-white"
 		>
 			<div className="p-4">
-				<h1 className="text-xl text-dashboard-title">{title}</h1>
-				<h1 className="pt-2 text-3xl" style={{ color: panelInfoColor(title) }}>
+				<h1 className="text-lh text-dashboard-title">{title}</h1>
+				<h1 className="pt-2 text-2xl" style={{ color: panelInfoColor(title) }}>
 					{dataDisplay}
 				</h1>
 			</div>

@@ -8,6 +8,8 @@ import GoogleAnalyticPane from "../components/GoogleAnalyticsPanel"
 import { CHART_DURATIONS } from "@/constants"
 import { useAgilityAppSDK, setHeight } from "@agility/app-sdk"
 import { IOAuthToken } from "./install"
+// @ts-ignore
+import numeral from 'numeral';
 
 // function to get the cumulative number of users
 function getCumulativeUsers(report: Report) {
@@ -18,6 +20,11 @@ function getCumulativeUsers(report: Report) {
 	report.data.rows.forEach((row) => {
 		cumulativeUsers += parseInt(row.metrics[0].values[0])
 	})
+
+	if (cumulativeUsers > 1000) {
+		cumulativeUsers = numeral(cumulativeUsers).format('0.0a')
+	}
+
 	return cumulativeUsers
 }
 
@@ -28,6 +35,11 @@ function getCumulativeNewUsers(report: Report) {
 	report.data.rows.forEach((row) => {
 		cumulativeNewUsers += parseInt(row.metrics[0].values[1])
 	})
+
+	if (cumulativeNewUsers > 1000) {
+		cumulativeNewUsers = numeral(cumulativeNewUsers).format('0.0a')
+	}
+
 	return cumulativeNewUsers
 }
 
@@ -38,6 +50,11 @@ function getCumulativePageviews(report: Report) {
 	report.data.rows.forEach((row) => {
 		cumulativePageviews += parseInt(row.metrics[0].values[2])
 	})
+
+	if (cumulativePageviews > 1000) {
+		cumulativePageviews = numeral(cumulativePageviews).format('0.0a')
+	}
+
 	return cumulativePageviews
 }
 
@@ -46,15 +63,18 @@ function getCumulativeSessionDuration(report: Report) {
 	let cumulativeSessionDuration = 0
 	if (!report?.data?.rows) return cumulativeSessionDuration
 	report.data.rows.forEach((row) => {
+
 		cumulativeSessionDuration += parseInt(row.metrics[0].values[3])
 	})
-	return Math.round(cumulativeSessionDuration / 60)
+
+
+	return Math.round(cumulativeSessionDuration / report.data.rows.length / 60)
 }
 
 export default function HomeDashboard() {
 	const { appInstallContext } = useAgilityAppSDK()
 
-	const [duration, setDuration] = useState(CHART_DURATIONS["7daysAgo"])
+	const [duration, setDuration] = useState(CHART_DURATIONS["30daysAgo"])
 	const [reportData, setReportData] = useState<Report | null>(null)
 
 	const [isUserViewSelected, setIsUserViewSelected] = useState(true)
@@ -120,7 +140,7 @@ export default function HomeDashboard() {
 			<div className="flex flex-row items-center justify-between pb-4">
 				<div className="left-element flex flex-row items-center">
 					<GoogleAnalyticsLogo />
-					<h1 className="ml-4 text-4xl font-medium text-gray-500">Analytics</h1>
+					<h1 className="ml-4 text-2xl font-medium text-gray-500">Analytics</h1>
 				</div>
 				<div className="right-element ml-auto items-center">
 					<DurationPicker onChange={setDuration} currentDuration={duration} />
