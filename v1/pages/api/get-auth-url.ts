@@ -32,7 +32,8 @@ export default function handler(
 		// If you only need one scope you can pass it as a string
 		scope: scopes,
 		state: state,
-		redirect_uri: redirectUrl
+		redirect_uri: redirectUrl,
+		prompt: "consent" //forces the refresh token to be returned every time
 
 	});
 
