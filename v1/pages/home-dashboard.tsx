@@ -6,7 +6,7 @@ import DurationPicker from "../components/DurationPicker"
 
 import GoogleAnalyticPane from "../components/GoogleAnalyticsPanel"
 import { CHART_DURATIONS } from "@/constants"
-import { useAgilityAppSDK, setHeight } from "@agility/app-sdk"
+import { useAgilityAppSDK, setHeight, configMethods } from "@agility/app-sdk"
 import { IOAuthToken } from "./install"
 // @ts-ignore
 import numeral from 'numeral';
@@ -97,7 +97,26 @@ export default function HomeDashboard() {
 	useEffect(() => {
 		if (appInstallContext?.configuration["Google Analytics Account"]) {
 			const token = JSON.parse(appInstallContext.configuration["Google Analytics Account"]) as IOAuthToken
-			setOAuthToken(token)
+			if(!token) return
+			
+			axios({
+				method: "post",
+				url: `/api/get-ga-access-token`,
+				data: { oAuthToken: token }
+			})
+			.then((response) => {
+				if(response.status === 200){
+					token.access_token = response.data.access_token
+					token.expiry_date = token.expiry_date + response.data.expires_in
+					configMethods.updateConfigurationValue({name: "Google Analytics Account", value: JSON.stringify(token)})
+				}
+				setOAuthToken(token)
+
+			})
+			.catch((error) => {
+				console.log(error)
+				setOAuthToken(token)
+			})
 			setProfileId(appInstallContext.configuration["profileId"])
 		}
 	}, [appInstallContext])
