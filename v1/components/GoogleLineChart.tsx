@@ -1,5 +1,5 @@
 import { CHART_DURATIONS } from "@/constants"
-import React from "react"
+import React, { useEffect } from "react"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts"
 
 
@@ -62,6 +62,8 @@ function formatMonth(monthString: string): string | null {
   }
 
 const LineChartComponent: React.FC<Props> = ({ reportData, isNewUserViewSelected, isUserViewSelected, isPageDurationViewSelected, isPageViewSelected, duration }) => {
+	const [isVisible, setIsVisible] = React.useState(false)
+
 	const data = reportData?.data?.rows ? reportData?.data?.rows?.map((row) => {
 		return {
 			date: duration === CHART_DURATIONS["365daysAgo"] ? formatMonth(row.dimensions[0]) : formatDate(row.dimensions[0]),
@@ -71,14 +73,29 @@ const LineChartComponent: React.FC<Props> = ({ reportData, isNewUserViewSelected
 			avgSessionDuration: Math.round(parseFloat(row.metrics[0].values[3])/60),
 		}
 	}) : []
+	  
+	const formatTooltip = (value: string, name: string): any => {
+		let label = ''
+		switch (name) {
+			case 'users': label = 'Users'; break;
+			case 'newUsers': label = 'New Users'; break;
+			case 'pageViews': label = 'Page Views'; break;
+			case 'avgSessionDuration': label = 'Avg. Session Duration'; break;
+		}
+		return [value, label]
+	};
+
+	useEffect(() => {
+		if(reportData) setIsVisible(true)
+	}, [reportData])
 
 	return (
-		<ResponsiveContainer width={"96%"} height={360} >
+		<ResponsiveContainer width={"96%"} height={360} className={`transition-opacity duration-650 ${isVisible ? 'opacity-100' : 'opacity-0'}`}>
 			<LineChart data={data}>
 				<XAxis dataKey="date" tickSize={0} tickMargin={16} />
 				<YAxis axisLine={{ stroke: "transparent" }} tickSize={0} tickMargin={16} />
 				<CartesianGrid horizontal vertical={false} stroke="#eee" />
-				<Tooltip />
+				<Tooltip formatter={formatTooltip} labelStyle={{ fontSize: 18, fontWeight:'bold' }}  />
 				{isUserViewSelected ? <Line type="linear" dataKey="users" stroke="#4600AA" dot={false} strokeWidth={3} /> : null}
 				{isNewUserViewSelected ? <Line type="linear" dataKey="newUsers" stroke="#691AD8" dot={false} strokeWidth={3} /> : null}
 				{isPageViewSelected ? <Line type="linear" dataKey="pageViews" stroke="#BC99EE" dot={false} strokeWidth={3} /> : null}q

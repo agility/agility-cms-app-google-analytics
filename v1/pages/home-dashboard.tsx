@@ -9,7 +9,8 @@ import { CHART_DURATIONS } from "@/constants"
 import { useAgilityAppSDK, setHeight, configMethods } from "@agility/app-sdk"
 import { IOAuthToken } from "./install"
 // @ts-ignore
-import numeral from 'numeral';
+import numeral from "numeral"
+import Loader from "@/components/Loader"
 
 // function to get the cumulative number of users
 function getCumulativeUsers(report: Report) {
@@ -22,7 +23,7 @@ function getCumulativeUsers(report: Report) {
 	})
 
 	if (cumulativeUsers > 1000) {
-		cumulativeUsers = numeral(cumulativeUsers).format('0.0a')
+		cumulativeUsers = numeral(cumulativeUsers).format("0.0a")
 	}
 
 	return cumulativeUsers
@@ -37,7 +38,7 @@ function getCumulativeNewUsers(report: Report) {
 	})
 
 	if (cumulativeNewUsers > 1000) {
-		cumulativeNewUsers = numeral(cumulativeNewUsers).format('0.0a')
+		cumulativeNewUsers = numeral(cumulativeNewUsers).format("0.0a")
 	}
 
 	return cumulativeNewUsers
@@ -52,7 +53,7 @@ function getCumulativePageviews(report: Report) {
 	})
 
 	if (cumulativePageviews > 1000) {
-		cumulativePageviews = numeral(cumulativePageviews).format('0.0a')
+		cumulativePageviews = numeral(cumulativePageviews).format("0.0a")
 	}
 
 	return cumulativePageviews
@@ -63,10 +64,8 @@ function getCumulativeSessionDuration(report: Report) {
 	let cumulativeSessionDuration = 0
 	if (!report?.data?.rows) return cumulativeSessionDuration
 	report.data.rows.forEach((row) => {
-
 		cumulativeSessionDuration += parseInt(row.metrics[0].values[3])
 	})
-
 
 	return Math.round(cumulativeSessionDuration / report.data.rows.length / 60)
 }
@@ -91,32 +90,34 @@ export default function HomeDashboard() {
 	const [profileId, setProfileId] = useState<string | null>(null)
 
 	useEffect(() => {
-		setHeight({height: 550})
+		setHeight({ height: 550 })
 	}, [])
 
 	useEffect(() => {
 		if (appInstallContext?.configuration["Google Analytics Account"]) {
 			const token = JSON.parse(appInstallContext.configuration["Google Analytics Account"]) as IOAuthToken
-			if(!token) return
-			
+			if (!token) return
+
 			axios({
 				method: "post",
 				url: `/api/get-ga-access-token`,
 				data: { oAuthToken: token }
 			})
-			.then((response) => {
-				if(response.status === 200){
-					token.access_token = response.data.access_token
-					token.expiry_date = token.expiry_date + response.data.expires_in
-					configMethods.updateConfigurationValue({name: "Google Analytics Account", value: JSON.stringify(token)})
-				}
-				setOAuthToken(token)
-
-			})
-			.catch((error) => {
-				console.log(error)
-				setOAuthToken(token)
-			})
+				.then((response) => {
+					if (response.status === 200) {
+						token.access_token = response.data.access_token
+						token.expiry_date = token.expiry_date + response.data.expires_in
+						configMethods.updateConfigurationValue({
+							name: "Google Analytics Account",
+							value: JSON.stringify(token)
+						})
+					}
+					setOAuthToken(token)
+				})
+				.catch((error) => {
+					console.log(error)
+					setOAuthToken(token)
+				})
 			setProfileId(appInstallContext.configuration["profileId"])
 		}
 	}, [appInstallContext])
@@ -201,7 +202,18 @@ export default function HomeDashboard() {
 					isPageDurationViewSelected={isPageDurationViewSelected}
 					duration={duration}
 				/>
-			) : null}
+			) : (
+				<div
+					style={{
+						width: "100%",
+						height: 360,
+						display: "flex",
+						justifyContent: "center"
+					}}
+				>
+					<Loader />
+				</div>
+			)}
 		</div>
 	)
 }
