@@ -1,6 +1,6 @@
 {
 	"name": "Google Analytics",
-	"documentationLink": "https://google-analytics-app-v1.agilitycms.com",
+	"documentationLink": "https://agilitycms.com/docs/apps/google-analytics",
 	"description": "Pull your Google Analytics data into Agility CMS.",
 	"version": "1.0.0",
 	"__sdkVersion": "2.0.0",
