@@ -3,7 +3,7 @@ import React, { useEffect, useMemo, useState } from "react"
 import { setExtraConfigValues, useAgilityPreInstall, IConfig } from "@agility/app-sdk"
 
 import ComboBox from "../components/ComboBox"
-import { Button, Select, SimpleSelectOptions } from "@agility/plenum-ui"
+import { Button, Select, ISimpleSelectOptions } from "@agility/plenum-ui"
 
 type Property = {
 	id: string
@@ -159,9 +159,10 @@ export default function Install() {
 			<div>
 				<Button
 					label="Install"
-					isWidthFull
+					fullWidth
 					onClick={() => setExtraConfigValues(extraConfigValues || [])}
-					isDisabled={!extraConfigValues}
+					disabled={!extraConfigValues}
+					actionType="primary"
 				/>
 			</div>
 		</div>

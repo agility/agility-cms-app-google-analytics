@@ -1,4 +1,4 @@
-import { Dropdown, ItemProp } from "@agility/plenum-ui"
+import { Dropdown, IItemProp } from "@agility/plenum-ui"
 import { BsChevronDown } from "react-icons/bs"
 import { CHART_DURATIONS } from "@/constants"
 
@@ -21,18 +21,19 @@ function getDurationLabel(duration: string) {
 }
 
 export default function DurationPicker({ onChange, currentDuration }: Props) {
-	const durations: ItemProp[][] = [
-		[{ label: "7 days ago", onClick: () => onChange(CHART_DURATIONS["7daysAgo"]) }],
-		[{ label: "1 month ago", onClick: () => onChange(CHART_DURATIONS["30daysAgo"]) }],
-		[{ label: "1 year ago", onClick: () => onChange(CHART_DURATIONS["365daysAgo"]) }]
+	const durations: IItemProp[][] = [
+		[{ label: "7 days ago", key: "7d", onClick: () => onChange(CHART_DURATIONS["7daysAgo"]) }],
+		[{ label: "1 month ago", key: "1m", onClick: () => onChange(CHART_DURATIONS["30daysAgo"]) }],
+		[{ label: "1 year ago", key: "1y", onClick: () => onChange(CHART_DURATIONS["365daysAgo"]) }]
 	]
 	//lang selection
 	return (
-			<Dropdown
-				itemsClassName="!w-auto"
-				label={getDurationLabel(currentDuration)}
-				items={durations}
-				IconElement={() => <BsChevronDown className="ml-2" />}
-			/>
+		<Dropdown
+			className="!w-auto"
+			id="duration-picker"
+			label={getDurationLabel(currentDuration)}
+			items={durations}
+			CustomDropdownTrigger={<BsChevronDown className="ml-2" />}
+		/>
 	)
 }
