@@ -14,10 +14,10 @@
   dependencies:
     axios "^0.27.2"
 
-"@agility/plenum-ui@^2.0.0":
-  version "2.0.0"
-  resolved "https://registry.yarnpkg.com/@agility/plenum-ui/-/plenum-ui-2.0.0.tgz#44e6aff5cb92421b4194ad31bae63733e0395174"
-  integrity sha512-aXL+3UgGFOoL68x9qbK2Ny6r2qV+OhjOgZeRJXXrXj++0FjHpyIAcRn2TvmXgufuhQoJXx3KJ7r5Vdrqs+t9Qw==
+"@agility/plenum-ui@^2.0.1":
+  version "2.0.1"
+  resolved "https://registry.yarnpkg.com/@agility/plenum-ui/-/plenum-ui-2.0.1.tgz#2dda57ce02f579d8af04de0292cc9a2f4495eb25"
+  integrity sha512-KMjWcRdriwHWqcLjOflmapB6Vo4LAxXdgruPPtugWjQJSOqg0rF/gdReP3y6O/mx7gvISYCbiJTPY9yj4Pj54A==
   dependencies:
     "@floating-ui/react" "^0.25.0"
     "@headlessui/react" "^1.7.10"
