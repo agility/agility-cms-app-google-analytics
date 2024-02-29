@@ -20,10 +20,10 @@ export interface IOAuthToken {
 
 export default function Install() {
 	const [properties, setProperties] = useState<Property[]>([])
-	const [profiles, setProfiles] = useState<Property[]>([])
+	const [accounts, setAccounts] = useState<Property[]>([])
 
+	const [selectedAccount, setSelectedAccount] = useState<Property | null>(null)
 	const [selectedProperty, setSelectedProperty] = useState<Property | null>(null)
-	const [selectedProfile, setSelectedProfile] = useState<Property | null>(null)
 	const { initializing, appInstallContext, instance, locale } = useAgilityPreInstall()
 
 	const [oAuthToken, setOAuthToken] = useState<IOAuthToken | null>(null)
@@ -39,12 +39,34 @@ export default function Install() {
 		setOAuthToken(token)
 	}, [configuration])
 
+	// get list of accounts from the API
 	useEffect(() => {
-		//get the list of web properties from the API
 		if (!oAuthToken) return
 		axios({
 			method: "post",
-			url: "/api/get-ga-properties?accountId=~all",
+			url: "/api/get-ga-accounts",
+			data: {
+				oAuthToken: oAuthToken
+			}
+		})
+			.then((response) => {
+				if (response.data.length > 0) {
+					setSelectedAccount(response.data[0])
+				}
+				setAccounts(response.data)
+			})
+			.catch((error) => {
+				console.log(error)
+			})
+	}, [oAuthToken])
+
+	// get the list of web properties from the API
+	useEffect(() => {
+		console.log("selectedAccount", selectedAccount)
+		if (!oAuthToken || !selectedAccount?.id) return
+		axios({
+			method: "post",
+			url: `/api/get-ga-properties?filter=${selectedAccount.id}`,
 			data: {
 				oAuthToken: oAuthToken
 			}
@@ -60,53 +82,27 @@ export default function Install() {
 			})
 
 		return () => {}
-	}, [oAuthToken])
-
-	useEffect(() => {
-		//get the list of web properties from the API
-		if (!oAuthToken) return
-		if (!selectedProperty) return
-
-		axios({
-			method: "post",
-			url: `/api/get-ga-views?accountId=${selectedProperty.accountId}&propertyId=${selectedProperty.id}`,
-			data: {
-				oAuthToken: oAuthToken
-			}
-		})
-			.then((response) => {
-				setProfiles(response.data)
-				if (response.data.length > 0) {
-					setSelectedProfile(response.data[0])
-				}
-			})
-			.catch((error) => {
-				console.log(error)
-			})
-
-		return () => {}
-	}, [selectedProperty, oAuthToken])
+	}, [oAuthToken, selectedAccount])
 
 	const extraConfigValues = useMemo(() => {
+		if (!selectedAccount) return
 		if (!selectedProperty) return
-		if (!selectedProfile) return
-		if (!configuration) return
 
 		return [
 			{
-				Name: "propertyId",
-				Value: selectedProperty.id,
-				Label: "Property ID",
-				Type: "GoogleAnalyticsPropertyId"
+				Name: "accountId",
+				Value: selectedAccount.id,
+				Label: "Account ID",
+				Type: "GoogleAnalyticsAccountId"
 			},
 			{
 				Name: "profileId",
-				Value: selectedProfile.id,
+				Value: selectedProperty.id,
 				Label: "Profile ID",
 				Type: "GoogleAnalyticsProfileId"
 			}
 		] as IConfig[]
-	}, [selectedProperty, selectedProfile, configuration])
+	}, [selectedAccount?.id, selectedProperty])
 
 	if (initializing) {
 		return <div>Loading...</div>
@@ -115,10 +111,25 @@ export default function Install() {
 	return (
 		<div className=" flex h-[100vh] flex-col ">
 			<div className="flex-1">
-				<p className="mb-4 mt-4">Select a Google Analytics property and profile for us to get data from.</p>
-
+				<p className="mb-4 mt-4">Select a Google Analytics (GA4) account and property for us to retrieve data from.</p>
 				<div className="p-1">
-					<div>Properties & Apps</div>
+					{accounts && accounts.length > 0 && (
+						<Select
+							label="Select an Account"
+							options={
+								accounts?.map((p) => ({
+									label: p.name,
+									value: p.id
+								})) || []
+							}
+							value={selectedAccount?.id ?? ""}
+							onChange={(value) => {
+								setSelectedAccount(accounts.find((a) => a.id === value) || null)
+							}}
+						/>
+					)}
+				</div>
+				<div className="p-1 mt-2">
 					{properties && properties.length > 0 && (
 						<Select
 							label="Select a property"
@@ -136,24 +147,7 @@ export default function Install() {
 					)}
 				</div>
 
-				<div className="p-1">
-					<div>View</div>
-					{profiles && profiles.length > 0 && (
-						<Select
-							label="Select a View"
-							options={
-								profiles?.map((p) => ({
-									label: p.name,
-									value: p.id
-								})) || []
-							}
-							value={selectedProfile?.id ?? ""}
-							onChange={(value) => {
-								setSelectedProfile(profiles.find((p) => p.id === value) || null)
-							}}
-						/>
-					)}
-				</div>
+
 			</div>
 
 			<div>

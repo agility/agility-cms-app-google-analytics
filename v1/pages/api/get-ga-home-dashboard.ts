@@ -13,7 +13,7 @@ type Data = {
 export default async function handler(req: NextApiRequest, res: NextApiResponse<any>) {
 	const duration = `${req.query.duration}` || "7daysAgo"
 	const profileId = `${req.query.profileId}` || ""
-
+	console.log('amihere')
 	const oauth2Client = getAuthenticatedClient()
 
 	const oauthToken: IOAuthToken = req.body.oAuthToken
@@ -57,7 +57,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
 			}
 		]
 	}
-
+	console.log('amihere')
 	// Call the Core Reporting API
 	analyticsreporting.reports.batchGet(
 		{
@@ -70,6 +70,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
 				return
 			}
 			if (response?.data) {
+				console.log('hello', response?.data)
 				res.status(200).json(response?.data)
 			}
 			res.status(400)

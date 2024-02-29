@@ -94,6 +94,7 @@ export default function HomeDashboard() {
 	}, [])
 
 	useEffect(() => {
+		console.log('appInstallContext', appInstallContext)
 		if (appInstallContext?.configuration["Google Analytics Account"]) {
 			const token = JSON.parse(appInstallContext.configuration["Google Analytics Account"]) as IOAuthToken
 			if (!token) return
@@ -123,6 +124,9 @@ export default function HomeDashboard() {
 	}, [appInstallContext])
 
 	useEffect(() => {
+		console.log("profileId", profileId)
+		console.log("duration", duration)
+		console.log("oAuthToken", oAuthToken)
 		if (!profileId || !duration || !oAuthToken) return
 
 		axios({
@@ -156,7 +160,7 @@ export default function HomeDashboard() {
 	}, [reportData])
 
 	return (
-		<div className="overflow-hidden">
+		<div className="overflow-hidden bg-red-500">
 			<div className="flex flex-row items-center justify-between pb-4">
 				<div className="left-element flex flex-row items-center">
 					<GoogleAnalyticsLogo />
