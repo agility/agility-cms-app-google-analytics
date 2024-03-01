@@ -13,13 +13,13 @@ import numeral from "numeral"
 import Loader from "@/components/Loader"
 
 // function to get the cumulative number of users
-function getCumulativeUsers(report: Report) {
+function getCumulativeActiveUsers(report: Report) {
 	let cumulativeUsers = 0
 
-	if (!report?.data?.rows) return cumulativeUsers
+	if (!report?.rows) return cumulativeUsers
 
-	report.data.rows.forEach((row) => {
-		cumulativeUsers += parseInt(row.metrics[0].values[0])
+	report.rows.forEach((row) => {
+		cumulativeUsers += parseInt(row.metricValues[0].value)
 	})
 
 	if (cumulativeUsers > 1000) {
@@ -32,9 +32,9 @@ function getCumulativeUsers(report: Report) {
 // function to get the cumulative number of new users
 function getCumulativeNewUsers(report: Report) {
 	let cumulativeNewUsers = 0
-	if (!report?.data?.rows) return cumulativeNewUsers
-	report.data.rows.forEach((row) => {
-		cumulativeNewUsers += parseInt(row.metrics[0].values[1])
+	if (!report?.rows) return cumulativeNewUsers
+	report.rows.forEach((row) => {
+		cumulativeNewUsers += parseInt(row.metricValues[1].value)
 	})
 
 	if (cumulativeNewUsers > 1000) {
@@ -47,9 +47,9 @@ function getCumulativeNewUsers(report: Report) {
 // function to get the cumulative number of pageviews
 function getCumulativePageviews(report: Report) {
 	let cumulativePageviews = 0
-	if (!report?.data?.rows) return cumulativePageviews
-	report.data.rows.forEach((row) => {
-		cumulativePageviews += parseInt(row.metrics[0].values[2])
+	if (!report?.rows) return cumulativePageviews
+	report.rows.forEach((row) => {
+		cumulativePageviews += parseInt(row.metricValues[2].value)
 	})
 
 	if (cumulativePageviews > 1000) {
@@ -62,12 +62,12 @@ function getCumulativePageviews(report: Report) {
 // function to get the cumulative session duration in seconds
 function getCumulativeSessionDuration(report: Report) {
 	let cumulativeSessionDuration = 0
-	if (!report?.data?.rows) return cumulativeSessionDuration
-	report.data.rows.forEach((row) => {
-		cumulativeSessionDuration += parseInt(row.metrics[0].values[3])
+	if (!report?.rows) return cumulativeSessionDuration
+	report.rows.forEach((row) => {
+		cumulativeSessionDuration += parseInt(row.metricValues[3].value)
 	})
 
-	return Math.round(cumulativeSessionDuration / report.data.rows.length / 60)
+	return Math.round(cumulativeSessionDuration / report.rows.length / 60)
 }
 
 export default function HomeDashboard() {
@@ -76,12 +76,12 @@ export default function HomeDashboard() {
 	const [duration, setDuration] = useState(CHART_DURATIONS["30daysAgo"])
 	const [reportData, setReportData] = useState<Report | null>(null)
 
-	const [isUserViewSelected, setIsUserViewSelected] = useState(true)
+	const [isActiveUserViewSelected, setIsActiveUserViewSelected] = useState(true)
 	const [isNewUserViewSelected, setIsNewUserViewSelected] = useState(false)
 	const [isPageDurationViewSelected, setIsPageDurationViewSelected] = useState(false)
 	const [isPageViewSelected, setIsPageViewSelected] = useState(false)
 
-	const [cumulativeUsers, setCumulativeUsers] = useState(0)
+	const [cumulativeActiveUsers, setCumulativeActiveUsers] = useState(0)
 	const [cumulativeNewUsers, setCumulativeNewUsers] = useState(0)
 	const [cumulativePageviews, setCumulativePageviews] = useState(0)
 	const [cumulativeSessionDuration, setCumulativeSessionDuration] = useState(0)
@@ -119,14 +119,11 @@ export default function HomeDashboard() {
 					console.log(error)
 					setOAuthToken(token)
 				})
-			setProfileId(appInstallContext.configuration["profileId"])
+				setProfileId(appInstallContext.configuration["profileId"])
 		}
 	}, [appInstallContext])
 
 	useEffect(() => {
-		console.log("profileId", profileId)
-		console.log("duration", duration)
-		console.log("oAuthToken", oAuthToken)
 		if (!profileId || !duration || !oAuthToken) return
 
 		axios({
@@ -135,8 +132,8 @@ export default function HomeDashboard() {
 			data: { oAuthToken }
 		})
 			.then((response) => {
-				if (response?.data?.reports[0]) {
-					const data: Report = response.data.reports[0]
+				if (response?.data) {
+					const data: Report = response.data
 					setReportData(data)
 				}
 			})
@@ -148,19 +145,19 @@ export default function HomeDashboard() {
 	useEffect(() => {
 		if (!reportData) return
 
-		const cumulativeUsers = getCumulativeUsers(reportData)
+		const cumulativeActiveUsers = getCumulativeActiveUsers(reportData)
 		const cumulativeNewUsers = getCumulativeNewUsers(reportData)
 		const cumulativePageviews = getCumulativePageviews(reportData)
 		const cumulativeSessionDuration = getCumulativeSessionDuration(reportData)
 
-		setCumulativeUsers(cumulativeUsers)
+		setCumulativeActiveUsers(cumulativeActiveUsers)
 		setCumulativeNewUsers(cumulativeNewUsers)
 		setCumulativePageviews(cumulativePageviews)
 		setCumulativeSessionDuration(cumulativeSessionDuration)
 	}, [reportData])
 
 	return (
-		<div className="overflow-hidden bg-red-500">
+		<div className="overflow-hidden">
 			<div className="flex flex-row items-center justify-between pb-4">
 				<div className="left-element flex flex-row items-center">
 					<GoogleAnalyticsLogo />
@@ -172,10 +169,10 @@ export default function HomeDashboard() {
 			</div>
 			<div className="mb-8 flex justify-between">
 				<GoogleAnalyticPane
-					title={"Users"}
-					dataDisplay={`${cumulativeUsers}`}
-					isSelected={isUserViewSelected}
-					setSelected={setIsUserViewSelected}
+					title={"Active Users"}
+					dataDisplay={`${cumulativeActiveUsers}`}
+					isSelected={isActiveUserViewSelected}
+					setSelected={setIsActiveUserViewSelected}
 				/>
 				<GoogleAnalyticPane
 					title={"New users"}
@@ -200,7 +197,7 @@ export default function HomeDashboard() {
 			{reportData ? (
 				<LineChartComponent
 					reportData={reportData}
-					isUserViewSelected={isUserViewSelected}
+					isActiveUserViewSelected={isActiveUserViewSelected}
 					isNewUserViewSelected={isNewUserViewSelected}
 					isPageViewSelected={isPageViewSelected}
 					isPageDurationViewSelected={isPageDurationViewSelected}

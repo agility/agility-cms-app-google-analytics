@@ -3,77 +3,54 @@ import type { NextApiRequest, NextApiResponse } from "next"
 import { CHART_DURATIONS } from "@/constants"
 import { IOAuthToken } from "../install"
 import { google } from "googleapis"
-import { getAuthenticatedClient } from "@/lib/get-authenticated-client"
 
-type Data = {
-	id: string
-	name: string
-}
+import { BetaAnalyticsDataClient } from '@google-analytics/data';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse<any>) {
-	const duration = `${req.query.duration}` || "7daysAgo"
-	const profileId = `${req.query.profileId}` || ""
-	console.log('amihere')
-	const oauth2Client = getAuthenticatedClient()
+    const duration = `${req.query.duration}` || "7daysAgo";
+    const profileId = `${req.query.profileId}` || ""; // Ensure you use GA4 Property ID here
+    
+    const oauthToken: IOAuthToken = req.body.oAuthToken
 
-	const oauthToken: IOAuthToken = req.body.oAuthToken
+	const authClient = new google.auth.OAuth2();
+	authClient.setCredentials({
+		access_token: oauthToken.access_token,
+		// Optionally, set the refresh token if your application can handle the refresh process
+		refresh_token: oauthToken.refresh_token,
+	});
 
-	// Set the access and refresh tokens on the OAuth2 client
-	oauth2Client.setCredentials(oauthToken)
+	// Instantiate the BetaAnalyticsDataClient with the custom auth client
+	//@ts-ignore
+	const analyticsDataClient = new BetaAnalyticsDataClient({authClient: authClient});
 
-	// Use the Core Reporting API
-	const analyticsreporting = google.analyticsreporting({ version: "v4", auth: oauth2Client })
+    // Adjust the metrics and dimensions according to GA4 requirements
+    const metrics = [
+        { name: 'activeUsers' },
+        { name: 'newUsers' },
+        { name: 'screenPageViews' },
+        { name: 'userEngagementDuration' },
+    ];
 
-	// Define the request parameters
-	const requestBody = {
-		reportRequests: [
-			{
-				viewId: profileId,
-				dateRanges: [
-					{
-						startDate: duration,
-						endDate: "today"
-					}
-				],
-				metrics: [
-					{
-						expression: "ga:users"
-					},
-					{
-						expression: "ga:newUsers"
-					},
-					{
-						expression: "ga:pageviews"
-					},
-					{
-						expression: "ga:sessionDuration"
-					}
-				],
-				dimensions: [
-					{
-						name: duration === CHART_DURATIONS["365daysAgo"] ? "ga:month" : "ga:date"
-					}
-				]
-			}
-		]
-	}
-	console.log('amihere')
-	// Call the Core Reporting API
-	analyticsreporting.reports.batchGet(
-		{
-			requestBody: requestBody
-		},
-		// @ts-ignore
-		(err, response) => {
-			if (err) {
-				console.error("Error calling Core Reporting API", err.message)
-				return
-			}
-			if (response?.data) {
-				console.log('hello', response?.data)
-				res.status(200).json(response?.data)
-			}
-			res.status(400)
-		}
-	)
+    // GA4 does not use viewId; it uses propertyId
+    const dimensions = [
+        { name: duration === CHART_DURATIONS["365daysAgo"] ? 'month' : 'date' },
+    ];
+
+    try {
+        const [response] = await analyticsDataClient.runReport({
+            property: `properties/${profileId}`,
+            dateRanges: [
+                {
+                    startDate: duration,
+                    endDate: 'today',
+                },
+            ],
+            metrics: metrics,
+            dimensions: dimensions,
+        });
+        res.status(200).json(response);
+    } catch (err: any) {
+        console.error("Error calling GA4 Data API", err);
+        res.status(400).send("Error in GA4 Data API call: " + err.message);
+    }
 }
