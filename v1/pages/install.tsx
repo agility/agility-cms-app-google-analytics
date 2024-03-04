@@ -87,17 +87,36 @@ export default function Install() {
 	const extraConfigValues = useMemo(() => {
 		if (!selectedAccount) return
 		if (!selectedProperty) return
+		
+		const cleanedAccountID = selectedAccount.id.replace("accounts/", "")
+		const cleanedPropertyID = selectedProperty.id.replace("properties/", "")
 
-		return [
+		console.log('checkreturn', [
 			{
 				Name: "accountId",
-				Value: selectedAccount.id,
+				Value: cleanedAccountID,
 				Label: "Account ID",
 				Type: "GoogleAnalyticsAccountId"
 			},
 			{
 				Name: "profileId",
-				Value: selectedProperty.id,
+				Value: cleanedPropertyID,
+				Label: "Profile ID",
+				Type: "GoogleAnalyticsProfileId"
+			}
+		] as IConfig[
+		])
+
+		return [
+			{
+				Name: "accountId",
+				Value: cleanedAccountID,
+				Label: "Account ID",
+				Type: "GoogleAnalyticsAccountId"
+			},
+			{
+				Name: "profileId",
+				Value: cleanedPropertyID,
 				Label: "Profile ID",
 				Type: "GoogleAnalyticsProfileId"
 			}
