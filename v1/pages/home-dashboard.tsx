@@ -94,7 +94,6 @@ export default function HomeDashboard() {
 	}, [])
 
 	useEffect(() => {
-		console.log('appInstallContext', appInstallContext)
 		if (appInstallContext?.configuration["Google Analytics Account"]) {
 			const token = JSON.parse(appInstallContext.configuration["Google Analytics Account"]) as IOAuthToken
 			if (!token) return

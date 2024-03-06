@@ -62,7 +62,6 @@ export default function Install() {
 
 	// get the list of web properties from the API
 	useEffect(() => {
-		console.log("selectedAccount", selectedAccount)
 		if (!oAuthToken || !selectedAccount?.id) return
 		axios({
 			method: "post",
@@ -90,22 +89,6 @@ export default function Install() {
 		
 		const cleanedAccountID = selectedAccount.id.replace("accounts/", "")
 		const cleanedPropertyID = selectedProperty.id.replace("properties/", "")
-
-		console.log('checkreturn', [
-			{
-				Name: "accountId",
-				Value: cleanedAccountID,
-				Label: "Account ID",
-				Type: "GoogleAnalyticsAccountId"
-			},
-			{
-				Name: "profileId",
-				Value: cleanedPropertyID,
-				Label: "Profile ID",
-				Type: "GoogleAnalyticsProfileId"
-			}
-		] as IConfig[
-		])
 
 		return [
 			{

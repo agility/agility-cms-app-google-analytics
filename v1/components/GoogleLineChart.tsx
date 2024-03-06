@@ -71,10 +71,6 @@ const LineChartComponent: React.FC<Props> = ({ reportData, isNewUserViewSelected
 			avgSessionDuration: Math.round(parseFloat(row.metricValues[3].value)/60),
 		}
 	}) : []
-
-	useEffect(() => {
-		console.log('reportData', reportData)	
-	}, [reportData])
 	  
 	const formatTooltip = (value: string, name: string): any => {
 		let label = ''
