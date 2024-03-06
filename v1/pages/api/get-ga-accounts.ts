@@ -1,8 +1,8 @@
 // Next.js API route support: https://nextjs.org/docs/api-routes/introduction
 import type { NextApiRequest, NextApiResponse } from 'next'
-
-import {	google } from 'googleapis';
+import { google } from 'googleapis';
 import { getAuthenticatedClient } from '@/lib/get-authenticated-client';
+import { IOAuthToken } from '../install';
 
 
 
@@ -15,21 +15,21 @@ export default async function handler(
 	req: NextApiRequest,
 	res: NextApiResponse<Data[]>
 ) {
+	const oauthToken: IOAuthToken = req.body.oAuthToken;
+	const oauth2Client = getAuthenticatedClient();
+	oauth2Client.setCredentials(oauthToken);
+  
+	// Instantiate the Google Analytics Admin API
+	const admin = google.analyticsadmin('v1alpha');
 
-	const oauth2Client = getAuthenticatedClient()
-	const analytics = google.analytics('v3');
-
-	const accounts = await analytics.management.accounts.list({
-		auth: oauth2Client
-	})
-
-
-	console.log("accounts", accounts)
-
-	const retVal = accounts?.data?.items?.map((account) => {
+	const accounts = await admin.accounts.list({
+		auth: oauth2Client,
+	});
+	
+	const retVal = accounts?.data?.accounts?.map((account) => {
 		return {
-			id: account.id,
-			name: account.name
+			id: account.name,
+			name: account.displayName
 		}
 	}) || []
 

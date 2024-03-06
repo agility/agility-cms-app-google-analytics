@@ -2,30 +2,28 @@ import { CHART_DURATIONS } from "@/constants"
 import React, { useEffect } from "react"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts"
 
-
+type MetricHeader = {
+	name: string
+	type: "TYPE_INTEGER" | "TYPE_FLOAT" | "TYPE_STRING" | "TYPE_BOOLEAN" | "TYPE_MONEY" | "TYPE_PERCENT" | "TYPE_SECONDS" | "TYPE_MILLISECONDS" | "TYPE_MINUTES" | "TYPE_HOURS" | "TYPE_DAYS" | "TYPE_MONTHS" | "TYPE_YEARS"
+}
 export interface Report {
-	columnHeader: {
-		dimensions: string[]
-		metricHeader: {
-			metricHeaderEntries: {
-				name: string
-				type: string
-			}[]
-		}
+	dimensionHeaders: {
+		name: string
 	}
-	data: {
+	metricHeaders: MetricHeader[]
 		rows: {
-			dimensions: string[]
-			metrics: {
-				values: string[]
+			dimensionValues: {
+				value: string
+			}[]
+			metricValues: {
+				value: string
 			}[]
 		}[]
-	}
 }
 
 interface Props {
 	reportData: Report,
-	isUserViewSelected: boolean,
+	isActiveUserViewSelected: boolean,
 	isNewUserViewSelected: boolean,
 	isPageViewSelected: boolean,
 	isPageDurationViewSelected: boolean,
@@ -61,16 +59,16 @@ function formatMonth(monthString: string): string | null {
 	return abbreviation || null;
   }
 
-const LineChartComponent: React.FC<Props> = ({ reportData, isNewUserViewSelected, isUserViewSelected, isPageDurationViewSelected, isPageViewSelected, duration }) => {
+const LineChartComponent: React.FC<Props> = ({ reportData, isNewUserViewSelected, isActiveUserViewSelected, isPageViewSelected, isPageDurationViewSelected, duration }) => {
 	const [isVisible, setIsVisible] = React.useState(false)
 
-	const data = reportData?.data?.rows ? reportData?.data?.rows?.map((row) => {
+	const data = reportData?.rows ? reportData?.rows?.map((row) => {
 		return {
-			date: duration === CHART_DURATIONS["365daysAgo"] ? formatMonth(row.dimensions[0]) : formatDate(row.dimensions[0]),
-			users: parseInt(row.metrics[0].values[0]),
-			newUsers: parseInt(row.metrics[0].values[1]),
-			pageViews: parseInt(row.metrics[0].values[2]),
-			avgSessionDuration: Math.round(parseFloat(row.metrics[0].values[3])/60),
+			date: duration === CHART_DURATIONS["365daysAgo"] ? formatMonth(row.dimensionValues[0].value) : formatDate(row.dimensionValues[0].value),
+			users: parseInt(row.metricValues[0].value),
+			newUsers: parseInt(row.metricValues[1].value),
+			pageViews: parseInt(row.metricValues[2].value),
+			avgSessionDuration: Math.round(parseFloat(row.metricValues[3].value)/60),
 		}
 	}) : []
 	  
@@ -96,7 +94,7 @@ const LineChartComponent: React.FC<Props> = ({ reportData, isNewUserViewSelected
 				<YAxis axisLine={{ stroke: "transparent" }} tickSize={0} tickMargin={16} />
 				<CartesianGrid horizontal vertical={false} stroke="#eee" />
 				<Tooltip formatter={formatTooltip} labelStyle={{ fontSize: 18, fontWeight:'bold' }}  />
-				{isUserViewSelected ? <Line type="linear" dataKey="users" stroke="#4600AA" dot={false} strokeWidth={3} /> : null}
+				{isActiveUserViewSelected ? <Line type="linear" dataKey="users" stroke="#4600AA" dot={false} strokeWidth={3} /> : null}
 				{isNewUserViewSelected ? <Line type="linear" dataKey="newUsers" stroke="#691AD8" dot={false} strokeWidth={3} /> : null}
 				{isPageViewSelected ? <Line type="linear" dataKey="pageViews" stroke="#BC99EE" dot={false} strokeWidth={3} /> : null}q
 				{isPageDurationViewSelected ? <Line type="linear" dataKey="avgSessionDuration" stroke="#111827" dot={false} strokeWidth={3} /> : null}
