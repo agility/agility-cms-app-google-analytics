@@ -13,48 +13,18 @@ import numeral from "numeral"
 import Loader from "@/components/Loader"
 import { Duration } from "luxon"
 
-// function to get the cumulative number of users
-function getCumulativeActiveUsers(report: Report) {
-	let cumulativeUsers = 0
 
+
+function getCumulativeSingleMetric(report: Report, index: number) {
+	let cumulative = 0
 	if (!report?.rows) return "0"
-
 	report.rows.forEach((row) => {
-		cumulativeUsers += parseInt(row.metricValues[0].value)
+		cumulative += parseInt(row.metricValues[index].value)
 	})
 
-	return numeral(cumulativeUsers).format("0.0a")
+	return numeral(cumulative).format("0a")
 }
 
-// function to get the cumulative number of new users
-function getCumulativeNewUsers(report: Report) {
-	let cumulativeNewUsers = 0
-	if (!report?.rows) return cumulativeNewUsers
-	report.rows.forEach((row) => {
-		cumulativeNewUsers += parseInt(row.metricValues[1].value)
-	})
-
-	if (cumulativeNewUsers > 1000) {
-		cumulativeNewUsers = numeral(cumulativeNewUsers).format("0.0a")
-	}
-
-	return cumulativeNewUsers
-}
-
-// function to get the cumulative number of pageviews
-function getCumulativePageviews(report: Report) {
-	let cumulativePageviews = 0
-	if (!report?.rows) return cumulativePageviews
-	report.rows.forEach((row) => {
-		cumulativePageviews += parseInt(row.metricValues[2].value)
-	})
-
-	if (cumulativePageviews > 1000) {
-		cumulativePageviews = numeral(cumulativePageviews).format("0.0a")
-	}
-
-	return cumulativePageviews
-}
 
 /**
  * Session duration in Milliseconds
@@ -72,8 +42,10 @@ function getCumulativeSessionDuration(report: Report) {
 	const dur = Duration.fromMillis(val)
 	if (val > 60000) {
 		return dur.toFormat("m'm' s's'")
-	} else {
+	} else if (val >= 1000){
 		return dur.toFormat("s's'")
+	} else {
+		return dur.toFormat("S'ms'")
 	}
 }
 
@@ -89,8 +61,8 @@ export default function HomeDashboard() {
 	const [isPageViewSelected, setIsPageViewSelected] = useState(false)
 
 	const [cumulativeActiveUsers, setCumulativeActiveUsers] = useState("0")
-	const [cumulativeNewUsers, setCumulativeNewUsers] = useState(0)
-	const [cumulativePageviews, setCumulativePageviews] = useState(0)
+	const [cumulativeNewUsers, setCumulativeNewUsers] = useState("0")
+	const [cumulativePageviews, setCumulativePageviews] = useState("0")
 	const [cumulativeSessionDuration, setCumulativeSessionDuration] = useState("0")
 
 	const [oAuthToken, setOAuthToken] = useState<IOAuthToken | null>(null)
@@ -162,9 +134,9 @@ export default function HomeDashboard() {
 	useEffect(() => {
 		if (!reportData) return
 
-		const cumulativeActiveUsers = getCumulativeActiveUsers(reportData)
-		const cumulativeNewUsers = getCumulativeNewUsers(reportData)
-		const cumulativePageviews = getCumulativePageviews(reportData)
+		const cumulativeActiveUsers = getCumulativeSingleMetric(reportData, 0)
+		const cumulativeNewUsers = getCumulativeSingleMetric(reportData, 1)
+		const cumulativePageviews = getCumulativeSingleMetric(reportData, 2)
 		const cumulativeSessionDuration = getCumulativeSessionDuration(reportData)
 
 		setCumulativeActiveUsers(cumulativeActiveUsers)
