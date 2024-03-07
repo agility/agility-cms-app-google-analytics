@@ -101,7 +101,6 @@ export default function HomeDashboard() {
 					}
 				})
 				.catch((error) => {
-					console.log(error)
 					setOAuthToken(token)
 				})
 			setProfileId(appInstallContext.configuration["profileId"])
@@ -119,7 +118,6 @@ export default function HomeDashboard() {
 			.then((response) => {
 				if (response?.data) {
 					const data: Report = response.data
-					console.log(data)
 					setReportData(data)
 				} else {
 					setError("There was a problem accessing the report data.")
@@ -127,7 +125,6 @@ export default function HomeDashboard() {
 			})
 			.catch((error) => {
 				setError("There was a problem accessing the the report data.")
-				console.log(error)
 			})
 	}, [duration, oAuthToken, profileId])
 
