@@ -4,13 +4,14 @@ import LineChartComponent, { Report } from "../components/GoogleLineChart"
 import GoogleAnalyticsLogo from "../components/GoogleAnalyticsLogo"
 import DurationPicker from "../components/DurationPicker"
 
-import GoogleAnalyticPane from "../components/GoogleAnalyticsPanel"
+import GoogleAnalyticsPanel from "../components/GoogleAnalyticsPanel"
 import { CHART_DURATIONS } from "@/constants"
 import { useAgilityAppSDK, setHeight, configMethods } from "@agility/app-sdk"
 import { IOAuthToken } from "./install"
 // @ts-ignore
 import numeral from "numeral"
 import Loader from "@/components/Loader"
+import { Duration } from "luxon"
 
 // function to get the cumulative number of users
 function getCumulativeActiveUsers(report: Report) {
@@ -59,15 +60,25 @@ function getCumulativePageviews(report: Report) {
 	return cumulativePageviews
 }
 
-// function to get the cumulative session duration in seconds
+/**
+ * Session duration in Milliseconds
+ * @param report
+ * @returns
+ */
 function getCumulativeSessionDuration(report: Report) {
 	let cumulativeSessionDuration = 0
-	if (!report?.rows) return cumulativeSessionDuration
+	if (!report?.rows) return "0"
 	report.rows.forEach((row) => {
 		cumulativeSessionDuration += parseInt(row.metricValues[3].value)
 	})
 
-	return Math.round(cumulativeSessionDuration / report.rows.length / 60)
+	const val = cumulativeSessionDuration / report.rows.length
+	const dur = Duration.fromMillis(val)
+	if (val > 60000) {
+		return dur.toFormat("m'm' s's'")
+	} else {
+		return dur.toFormat("s's'")
+	}
 }
 
 export default function HomeDashboard() {
@@ -84,7 +95,7 @@ export default function HomeDashboard() {
 	const [cumulativeActiveUsers, setCumulativeActiveUsers] = useState(0)
 	const [cumulativeNewUsers, setCumulativeNewUsers] = useState(0)
 	const [cumulativePageviews, setCumulativePageviews] = useState(0)
-	const [cumulativeSessionDuration, setCumulativeSessionDuration] = useState(0)
+	const [cumulativeSessionDuration, setCumulativeSessionDuration] = useState("0")
 
 	const [oAuthToken, setOAuthToken] = useState<IOAuthToken | null>(null)
 	const [profileId, setProfileId] = useState<string | null>(null)
@@ -106,22 +117,26 @@ export default function HomeDashboard() {
 			})
 				.then((response) => {
 					if (response.status === 200) {
+						//the token was expired, so we needed to update it
 						token.access_token = response.data.access_token
 						token.expiry_date = token.expiry_date + response.data.expires_in
 						configMethods.updateConfigurationValue({
 							name: "Google Analytics Account",
 							value: JSON.stringify(token)
 						})
-					}else{
-						setError("There was an issue getting the google analytics access token.")
+					} else if (response.status === 204) {
+						//the token is still valid
+						setOAuthToken(token)
+					} else {
+						//something else happened...
+						setError("There was a problem accessing Google Analytics.")
 					}
-					setOAuthToken(token)
 				})
 				.catch((error) => {
 					console.log(error)
 					setOAuthToken(token)
 				})
-				setProfileId(appInstallContext.configuration["profileId"])
+			setProfileId(appInstallContext.configuration["profileId"])
 		}
 	}, [appInstallContext])
 
@@ -136,13 +151,14 @@ export default function HomeDashboard() {
 			.then((response) => {
 				if (response?.data) {
 					const data: Report = response.data
+					console.log(data)
 					setReportData(data)
-				}else{
-					setError("There was some trouble getting the report data.")
+				} else {
+					setError("There was a problem accessing the report data.")
 				}
 			})
 			.catch((error) => {
-				setError("There was some trouble getting the report data.")
+				setError("There was a problem accessing the the report data.")
 				console.log(error)
 			})
 	}, [duration, oAuthToken, profileId])
@@ -201,27 +217,27 @@ export default function HomeDashboard() {
 				</div>
 			</div>
 			<div className="mb-8 flex justify-between">
-				<GoogleAnalyticPane
+				<GoogleAnalyticsPanel
 					title={"Active Users"}
 					dataDisplay={`${cumulativeActiveUsers}`}
 					isSelected={isActiveUserViewSelected}
 					setSelected={setIsActiveUserViewSelected}
 				/>
-				<GoogleAnalyticPane
-					title={"New users"}
+				<GoogleAnalyticsPanel
+					title={"New Users"}
 					dataDisplay={`${cumulativeNewUsers}`}
 					isSelected={isNewUserViewSelected}
 					setSelected={setIsNewUserViewSelected}
 				/>
-				<GoogleAnalyticPane
-					title={"Page views"}
+				<GoogleAnalyticsPanel
+					title={"Page Views"}
 					dataDisplay={`${cumulativePageviews}`}
 					isSelected={isPageViewSelected}
 					setSelected={setIsPageViewSelected}
 				/>
-				<GoogleAnalyticPane
-					title={"Avg. engagement time"}
-					dataDisplay={`${cumulativeSessionDuration}m`}
+				<GoogleAnalyticsPanel
+					title={"Avg. Engagement Time"}
+					dataDisplay={cumulativeSessionDuration}
 					isSelected={isPageDurationViewSelected}
 					setSelected={setIsPageDurationViewSelected}
 				/>
