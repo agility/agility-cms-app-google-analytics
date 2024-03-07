@@ -47,6 +47,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
             ],
             metrics: metrics,
             dimensions: dimensions,
+            orderBys: [
+                {
+                    dimension: {
+                        dimensionName: duration === CHART_DURATIONS["365daysAgo"] ? 'month' : 'date',
+                    },
+                }
+            ],
         });
         res.status(200).json(response);
     } catch (err: any) {
