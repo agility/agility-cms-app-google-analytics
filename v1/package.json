@@ -38,6 +38,7 @@
   "devDependencies": {
     "@google-analytics/data": "^4.4.0",
     "@types/luxon": "^3.4.2",
+    "@types/numeral": "^2.0.5",
     "autoprefixer": "^10.4.13",
     "googleapis": "^133.0.0",
     "postcss": "^8.4.21",

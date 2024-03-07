@@ -8,7 +8,7 @@ import GoogleAnalyticsPanel from "../components/GoogleAnalyticsPanel"
 import { CHART_DURATIONS } from "@/constants"
 import { useAgilityAppSDK, setHeight, configMethods } from "@agility/app-sdk"
 import { IOAuthToken } from "./install"
-// @ts-ignore
+
 import numeral from "numeral"
 import Loader from "@/components/Loader"
 import { Duration } from "luxon"
@@ -17,17 +17,13 @@ import { Duration } from "luxon"
 function getCumulativeActiveUsers(report: Report) {
 	let cumulativeUsers = 0
 
-	if (!report?.rows) return cumulativeUsers
+	if (!report?.rows) return "0"
 
 	report.rows.forEach((row) => {
 		cumulativeUsers += parseInt(row.metricValues[0].value)
 	})
 
-	if (cumulativeUsers > 1000) {
-		cumulativeUsers = numeral(cumulativeUsers).format("0.0a")
-	}
-
-	return cumulativeUsers
+	return numeral(cumulativeUsers).format("0.0a")
 }
 
 // function to get the cumulative number of new users
@@ -92,7 +88,7 @@ export default function HomeDashboard() {
 	const [isPageDurationViewSelected, setIsPageDurationViewSelected] = useState(false)
 	const [isPageViewSelected, setIsPageViewSelected] = useState(false)
 
-	const [cumulativeActiveUsers, setCumulativeActiveUsers] = useState(0)
+	const [cumulativeActiveUsers, setCumulativeActiveUsers] = useState("0")
 	const [cumulativeNewUsers, setCumulativeNewUsers] = useState(0)
 	const [cumulativePageviews, setCumulativePageviews] = useState(0)
 	const [cumulativeSessionDuration, setCumulativeSessionDuration] = useState("0")
