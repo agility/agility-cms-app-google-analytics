@@ -1,6 +1,7 @@
 import { CHART_DURATIONS } from "@/constants"
 import React, { useEffect } from "react"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts"
+import { Duration } from "luxon"
 
 type MetricHeader = {
 	name: string
@@ -68,7 +69,7 @@ const LineChartComponent: React.FC<Props> = ({ reportData, isNewUserViewSelected
 			users: parseInt(row.metricValues[0].value),
 			newUsers: parseInt(row.metricValues[1].value),
 			pageViews: parseInt(row.metricValues[2].value),
-			avgSessionDuration: Math.round(parseFloat(row.metricValues[3].value)/60),
+			avgSessionDuration: Math.round(parseFloat(row.metricValues[3].value)),
 		}
 	}) : []
 	  
@@ -78,8 +79,20 @@ const LineChartComponent: React.FC<Props> = ({ reportData, isNewUserViewSelected
 			case 'users': label = 'Users'; break;
 			case 'newUsers': label = 'New Users'; break;
 			case 'pageViews': label = 'Page Views'; break;
-			case 'avgSessionDuration': label = 'Avg. Session Duration'; break;
+			case 'avgSessionDuration': label = 'Avg. Engagement Time'; break;
 		}
+		
+		if(label === 'Avg. Engagement Time') {
+			const dur = Duration.fromMillis(parseInt(value))
+			if (parseInt(value) > 60000) {
+				return [`${dur.toFormat("m'm' s's'")}`, label]
+			} else if (parseInt(value) >= 1000){
+				return [`${dur.toFormat("s's'")}`, label]
+			} else {
+				return [`${dur.toFormat("S'ms'")}`, label]
+			}
+		}
+
 		return [value, label]
 	};
 
