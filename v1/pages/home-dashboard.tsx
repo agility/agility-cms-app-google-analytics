@@ -88,6 +88,7 @@ export default function HomeDashboard() {
 
 	const [oAuthToken, setOAuthToken] = useState<IOAuthToken | null>(null)
 	const [profileId, setProfileId] = useState<string | null>(null)
+	const [error, setError] = useState<string | null>(null)
 
 	useEffect(() => {
 		setHeight({ height: 550 })
@@ -111,6 +112,8 @@ export default function HomeDashboard() {
 							name: "Google Analytics Account",
 							value: JSON.stringify(token)
 						})
+					}else{
+						setError("There was an issue getting the google analytics access token.")
 					}
 					setOAuthToken(token)
 				})
@@ -134,9 +137,12 @@ export default function HomeDashboard() {
 				if (response?.data) {
 					const data: Report = response.data
 					setReportData(data)
+				}else{
+					setError("There was some trouble getting the report data.")
 				}
 			})
 			.catch((error) => {
+				setError("There was some trouble getting the report data.")
 				console.log(error)
 			})
 	}, [duration, oAuthToken, profileId])
@@ -154,6 +160,34 @@ export default function HomeDashboard() {
 		setCumulativePageviews(cumulativePageviews)
 		setCumulativeSessionDuration(cumulativeSessionDuration)
 	}, [reportData])
+
+	const renderReport = () => {
+		if (reportData) {
+			return (
+				<LineChartComponent
+					reportData={reportData}
+					isActiveUserViewSelected={isActiveUserViewSelected}
+					isNewUserViewSelected={isNewUserViewSelected}
+					isPageViewSelected={isPageViewSelected}
+					isPageDurationViewSelected={isPageDurationViewSelected}
+					duration={duration}
+				/>
+			)
+		} else {
+			return (
+				<div
+					style={{
+						width: "100%",
+						height: 360,
+						display: "flex",
+						justifyContent: "center"
+					}}
+				>
+					<Loader />
+				</div>
+			)
+		}
+	}
 
 	return (
 		<div className="overflow-hidden">
@@ -193,26 +227,12 @@ export default function HomeDashboard() {
 				/>
 			</div>
 
-			{reportData ? (
-				<LineChartComponent
-					reportData={reportData}
-					isActiveUserViewSelected={isActiveUserViewSelected}
-					isNewUserViewSelected={isNewUserViewSelected}
-					isPageViewSelected={isPageViewSelected}
-					isPageDurationViewSelected={isPageDurationViewSelected}
-					duration={duration}
-				/>
-			) : (
-				<div
-					style={{
-						width: "100%",
-						height: 360,
-						display: "flex",
-						justifyContent: "center"
-					}}
-				>
-					<Loader />
+			{error ? (
+				<div className="mt-40 flex h-full w-full items-center justify-center">
+					<p>{error}</p>
 				</div>
+			) : (
+				renderReport()
 			)}
 		</div>
 	)
