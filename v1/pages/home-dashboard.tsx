@@ -92,6 +92,7 @@ export default function HomeDashboard() {
 							name: "Google Analytics Account",
 							value: JSON.stringify(token)
 						})
+						setOAuthToken(token)
 					} else if (response.status === 204) {
 						//the token is still valid
 						setOAuthToken(token)
@@ -109,7 +110,7 @@ export default function HomeDashboard() {
 
 	useEffect(() => {
 		if (!profileId || !duration || !oAuthToken) return
-
+		
 		axios({
 			method: "post",
 			url: `/api/get-ga-home-dashboard?profileId=${profileId}&duration=${duration}`,
