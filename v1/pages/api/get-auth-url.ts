@@ -14,8 +14,6 @@ export default function handler(
 
 	const state = req.body.state || ""
 
-	console.log("Gen url with state", req.body)
-
 	const redirectUrl = process.env.GOOGLE_REDIRECT_URI;
 
 	const oauth2Client = getOauth2Client()
@@ -36,9 +34,6 @@ export default function handler(
 		prompt: "consent" //forces the refresh token to be returned every time
 
 	});
-
-
-	console.log("Generated URL", url)
 
 	res.status(200).json({ url })
 }

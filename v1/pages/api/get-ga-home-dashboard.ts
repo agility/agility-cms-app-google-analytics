@@ -9,19 +9,19 @@ import { BetaAnalyticsDataClient } from '@google-analytics/data';
 export default async function handler(req: NextApiRequest, res: NextApiResponse<any>) {
     const duration = `${req.query.duration}` || "7daysAgo";
     const profileId = `${req.query.profileId}` || ""; // Ensure you use GA4 Property ID here
-    
+
     const oauthToken: IOAuthToken = req.body.oAuthToken
 
-	const authClient = new google.auth.OAuth2();
-	authClient.setCredentials({
-		access_token: oauthToken.access_token,
-		// Optionally, set the refresh token if your application can handle the refresh process
-		refresh_token: oauthToken.refresh_token,
-	});
+    const authClient = new google.auth.OAuth2();
+    authClient.setCredentials({
+        access_token: oauthToken.access_token,
+        // Optionally, set the refresh token if your application can handle the refresh process
+        refresh_token: oauthToken.refresh_token,
+    });
 
-	// Instantiate the BetaAnalyticsDataClient with the custom auth client
-	//@ts-ignore
-	const analyticsDataClient = new BetaAnalyticsDataClient({authClient: authClient});
+    // Instantiate the BetaAnalyticsDataClient with the custom auth client
+    //@ts-ignore
+    const analyticsDataClient = new BetaAnalyticsDataClient({ authClient: authClient });
 
     // Adjust the metrics and dimensions according to GA4 requirements
     const metrics = [
@@ -47,6 +47,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
             ],
             metrics: metrics,
             dimensions: dimensions,
+            orderBys: [
+                {
+                    dimension: {
+                        dimensionName: duration === CHART_DURATIONS["365daysAgo"] ? 'month' : 'date',
+                    },
+                }
+            ],
         });
         res.status(200).json(response);
     } catch (err: any) {

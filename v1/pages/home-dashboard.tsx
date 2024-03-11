@@ -4,70 +4,49 @@ import LineChartComponent, { Report } from "../components/GoogleLineChart"
 import GoogleAnalyticsLogo from "../components/GoogleAnalyticsLogo"
 import DurationPicker from "../components/DurationPicker"
 
-import GoogleAnalyticPane from "../components/GoogleAnalyticsPanel"
+import GoogleAnalyticsPanel from "../components/GoogleAnalyticsPanel"
 import { CHART_DURATIONS } from "@/constants"
 import { useAgilityAppSDK, setHeight, configMethods } from "@agility/app-sdk"
 import { IOAuthToken } from "./install"
-// @ts-ignore
+
 import numeral from "numeral"
 import Loader from "@/components/Loader"
+import { Duration } from "luxon"
 
-// function to get the cumulative number of users
-function getCumulativeActiveUsers(report: Report) {
-	let cumulativeUsers = 0
 
-	if (!report?.rows) return cumulativeUsers
 
+function getCumulativeSingleMetric(report: Report, index: number) {
+	let cumulative = 0
+	if (!report?.rows) return "0"
 	report.rows.forEach((row) => {
-		cumulativeUsers += parseInt(row.metricValues[0].value)
+		cumulative += parseInt(row.metricValues[index].value)
 	})
 
-	if (cumulativeUsers > 1000) {
-		cumulativeUsers = numeral(cumulativeUsers).format("0.0a")
-	}
-
-	return cumulativeUsers
+	return numeral(cumulative).format("0a")
 }
 
-// function to get the cumulative number of new users
-function getCumulativeNewUsers(report: Report) {
-	let cumulativeNewUsers = 0
-	if (!report?.rows) return cumulativeNewUsers
-	report.rows.forEach((row) => {
-		cumulativeNewUsers += parseInt(row.metricValues[1].value)
-	})
 
-	if (cumulativeNewUsers > 1000) {
-		cumulativeNewUsers = numeral(cumulativeNewUsers).format("0.0a")
-	}
-
-	return cumulativeNewUsers
-}
-
-// function to get the cumulative number of pageviews
-function getCumulativePageviews(report: Report) {
-	let cumulativePageviews = 0
-	if (!report?.rows) return cumulativePageviews
-	report.rows.forEach((row) => {
-		cumulativePageviews += parseInt(row.metricValues[2].value)
-	})
-
-	if (cumulativePageviews > 1000) {
-		cumulativePageviews = numeral(cumulativePageviews).format("0.0a")
-	}
-
-	return cumulativePageviews
-}
-
-// function to get the cumulative session duration in seconds
+/**
+ * Session duration in Milliseconds
+ * @param report
+ * @returns
+ */
 function getCumulativeSessionDuration(report: Report) {
 	let cumulativeSessionDuration = 0
-	if (!report?.rows) return cumulativeSessionDuration
+	if (!report?.rows) return "0"
 	report.rows.forEach((row) => {
 		cumulativeSessionDuration += parseInt(row.metricValues[3].value)
 	})
 
-	return Math.round(cumulativeSessionDuration / report.rows.length / 60)
+	const val = cumulativeSessionDuration / report.rows.length
+	const dur = Duration.fromMillis(val)
+	if (val > 60000) {
+		return dur.toFormat("m'm' s's'")
+	} else if (val >= 1000){
+		return dur.toFormat("s's'")
+	} else {
+		return dur.toFormat("S'ms'")
+	}
 }
 
 export default function HomeDashboard() {
@@ -81,13 +60,14 @@ export default function HomeDashboard() {
 	const [isPageDurationViewSelected, setIsPageDurationViewSelected] = useState(false)
 	const [isPageViewSelected, setIsPageViewSelected] = useState(false)
 
-	const [cumulativeActiveUsers, setCumulativeActiveUsers] = useState(0)
-	const [cumulativeNewUsers, setCumulativeNewUsers] = useState(0)
-	const [cumulativePageviews, setCumulativePageviews] = useState(0)
-	const [cumulativeSessionDuration, setCumulativeSessionDuration] = useState(0)
+	const [cumulativeActiveUsers, setCumulativeActiveUsers] = useState("0")
+	const [cumulativeNewUsers, setCumulativeNewUsers] = useState("0")
+	const [cumulativePageviews, setCumulativePageviews] = useState("0")
+	const [cumulativeSessionDuration, setCumulativeSessionDuration] = useState("0")
 
 	const [oAuthToken, setOAuthToken] = useState<IOAuthToken | null>(null)
 	const [profileId, setProfileId] = useState<string | null>(null)
+	const [error, setError] = useState<string | null>(null)
 
 	useEffect(() => {
 		setHeight({ height: 550 })
@@ -105,26 +85,32 @@ export default function HomeDashboard() {
 			})
 				.then((response) => {
 					if (response.status === 200) {
+						//the token was expired, so we needed to update it
 						token.access_token = response.data.access_token
 						token.expiry_date = token.expiry_date + response.data.expires_in
 						configMethods.updateConfigurationValue({
 							name: "Google Analytics Account",
 							value: JSON.stringify(token)
 						})
+						setOAuthToken(token)
+					} else if (response.status === 204) {
+						//the token is still valid
+						setOAuthToken(token)
+					} else {
+						//something else happened...
+						setError("There was a problem accessing Google Analytics.")
 					}
-					setOAuthToken(token)
 				})
 				.catch((error) => {
-					console.log(error)
 					setOAuthToken(token)
 				})
-				setProfileId(appInstallContext.configuration["profileId"])
+			setProfileId(appInstallContext.configuration["profileId"])
 		}
 	}, [appInstallContext])
 
 	useEffect(() => {
 		if (!profileId || !duration || !oAuthToken) return
-
+		
 		axios({
 			method: "post",
 			url: `/api/get-ga-home-dashboard?profileId=${profileId}&duration=${duration}`,
@@ -134,19 +120,21 @@ export default function HomeDashboard() {
 				if (response?.data) {
 					const data: Report = response.data
 					setReportData(data)
+				} else {
+					setError("There was a problem accessing the report data.")
 				}
 			})
 			.catch((error) => {
-				console.log(error)
+				setError("There was a problem accessing the the report data.")
 			})
 	}, [duration, oAuthToken, profileId])
 
 	useEffect(() => {
 		if (!reportData) return
 
-		const cumulativeActiveUsers = getCumulativeActiveUsers(reportData)
-		const cumulativeNewUsers = getCumulativeNewUsers(reportData)
-		const cumulativePageviews = getCumulativePageviews(reportData)
+		const cumulativeActiveUsers = getCumulativeSingleMetric(reportData, 0)
+		const cumulativeNewUsers = getCumulativeSingleMetric(reportData, 1)
+		const cumulativePageviews = getCumulativeSingleMetric(reportData, 2)
 		const cumulativeSessionDuration = getCumulativeSessionDuration(reportData)
 
 		setCumulativeActiveUsers(cumulativeActiveUsers)
@@ -154,6 +142,34 @@ export default function HomeDashboard() {
 		setCumulativePageviews(cumulativePageviews)
 		setCumulativeSessionDuration(cumulativeSessionDuration)
 	}, [reportData])
+
+	const renderReport = () => {
+		if (reportData) {
+			return (
+				<LineChartComponent
+					reportData={reportData}
+					isActiveUserViewSelected={isActiveUserViewSelected}
+					isNewUserViewSelected={isNewUserViewSelected}
+					isPageViewSelected={isPageViewSelected}
+					isPageDurationViewSelected={isPageDurationViewSelected}
+					duration={duration}
+				/>
+			)
+		} else {
+			return (
+				<div
+					style={{
+						width: "100%",
+						height: 360,
+						display: "flex",
+						justifyContent: "center"
+					}}
+				>
+					<Loader />
+				</div>
+			)
+		}
+	}
 
 	return (
 		<div className="overflow-hidden">
@@ -167,52 +183,38 @@ export default function HomeDashboard() {
 				</div>
 			</div>
 			<div className="mb-8 flex justify-between">
-				<GoogleAnalyticPane
+				<GoogleAnalyticsPanel
 					title={"Active Users"}
 					dataDisplay={`${cumulativeActiveUsers}`}
 					isSelected={isActiveUserViewSelected}
 					setSelected={setIsActiveUserViewSelected}
 				/>
-				<GoogleAnalyticPane
-					title={"New users"}
+				<GoogleAnalyticsPanel
+					title={"New Users"}
 					dataDisplay={`${cumulativeNewUsers}`}
 					isSelected={isNewUserViewSelected}
 					setSelected={setIsNewUserViewSelected}
 				/>
-				<GoogleAnalyticPane
-					title={"Page views"}
+				<GoogleAnalyticsPanel
+					title={"Page Views"}
 					dataDisplay={`${cumulativePageviews}`}
 					isSelected={isPageViewSelected}
 					setSelected={setIsPageViewSelected}
 				/>
-				<GoogleAnalyticPane
-					title={"Avg. engagement time"}
-					dataDisplay={`${cumulativeSessionDuration}m`}
+				<GoogleAnalyticsPanel
+					title={"Avg. Engagement Time"}
+					dataDisplay={cumulativeSessionDuration}
 					isSelected={isPageDurationViewSelected}
 					setSelected={setIsPageDurationViewSelected}
 				/>
 			</div>
 
-			{reportData ? (
-				<LineChartComponent
-					reportData={reportData}
-					isActiveUserViewSelected={isActiveUserViewSelected}
-					isNewUserViewSelected={isNewUserViewSelected}
-					isPageViewSelected={isPageViewSelected}
-					isPageDurationViewSelected={isPageDurationViewSelected}
-					duration={duration}
-				/>
-			) : (
-				<div
-					style={{
-						width: "100%",
-						height: 360,
-						display: "flex",
-						justifyContent: "center"
-					}}
-				>
-					<Loader />
+			{error ? (
+				<div className="mt-40 flex h-full w-full items-center justify-center">
+					<p>{error}</p>
 				</div>
+			) : (
+				renderReport()
 			)}
 		</div>
 	)

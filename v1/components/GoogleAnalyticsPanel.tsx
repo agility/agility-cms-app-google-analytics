@@ -1,6 +1,6 @@
 import React from "react"
 
-interface IGoogleAnalyticPane {
+interface IGoogleAnalyticsPanel {
 	title?: string
 	dataDisplay?: string
 	isSelected?: boolean
@@ -22,8 +22,7 @@ const panelInfoColor = (title: string | undefined) => {
 	return "#4600AA"
 }
 
-
-const GoogleAnalyticPane: React.FC<IGoogleAnalyticPane> = ({ title, dataDisplay, isSelected, setSelected }) => {
+const GoogleAnalyticsPanel: React.FC<IGoogleAnalyticsPanel> = ({ title, dataDisplay, isSelected, setSelected }) => {
 	const [isHovering, setIsHovering] = React.useState(false)
 
 	const handleMouseEnter = () => {
@@ -35,15 +34,19 @@ const GoogleAnalyticPane: React.FC<IGoogleAnalyticPane> = ({ title, dataDisplay,
 	}
 
 	const hoverIndicator = () => {
-		if (isSelected){
-		  	return <div style={{backgroundColor: panelInfoColor(title)}} className="h-1 w-full transition duration-300 ease-in-out" />;
+		if (isSelected) {
+			return (
+				<div
+					style={{ backgroundColor: panelInfoColor(title) }}
+					className="h-1 w-full transition duration-300 ease-in-out"
+				/>
+			)
 		}
-		if (isHovering){
-		  return <div className="h-1 w-full bg-gray-100 transition duration-300 ease-in-out" />
-		
+		if (isHovering) {
+			return <div className="h-1 w-full bg-gray-100 transition duration-300 ease-in-out" />
 		}
-		return <div className="h-1 w-full bg-white transition duration-300 ease-in-out" />;
-	  };
+		return <div className="h-1 w-full bg-white transition duration-300 ease-in-out" />
+	}
 
 	return (
 		<div
@@ -63,4 +66,4 @@ const GoogleAnalyticPane: React.FC<IGoogleAnalyticPane> = ({ title, dataDisplay,
 	)
 }
 
-export default GoogleAnalyticPane
+export default GoogleAnalyticsPanel
