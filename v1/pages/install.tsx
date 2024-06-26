@@ -3,7 +3,7 @@ import React, { useEffect, useMemo, useState } from "react"
 import { setExtraConfigValues, useAgilityPreInstall, IConfig } from "@agility/app-sdk"
 
 import ComboBox from "../components/ComboBox"
-import { Button, Select, ISimpleSelectOptions } from "@agility/plenum-ui"
+import { Button, Select } from "@agility/plenum-ui"
 
 type Property = {
 	id: string
