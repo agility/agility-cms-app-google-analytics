@@ -50,7 +50,7 @@ function getCumulativeSessionDuration(report: Report) {
 }
 
 export default function HomeDashboard() {
-	const { appInstallContext } = useAgilityAppSDK()
+	const { appInstallContext, initializing } = useAgilityAppSDK()
 
 	const [duration, setDuration] = useState(CHART_DURATIONS["30daysAgo"])
 	const [reportData, setReportData] = useState<Report | null>(null)
@@ -101,7 +101,7 @@ export default function HomeDashboard() {
 						setError("There was a problem accessing Google Analytics.")
 					}
 				})
-				.catch((error) => {
+				.catch(() => {
 					setOAuthToken(token)
 				})
 			setProfileId(appInstallContext.configuration["profileId"])
@@ -124,7 +124,7 @@ export default function HomeDashboard() {
 					setError("There was a problem accessing the report data.")
 				}
 			})
-			.catch((error) => {
+			.catch(() => {
 				setError("There was a problem accessing the the report data.")
 			})
 	}, [duration, oAuthToken, profileId])
@@ -142,6 +142,18 @@ export default function HomeDashboard() {
 		setCumulativePageviews(cumulativePageviews)
 		setCumulativeSessionDuration(cumulativeSessionDuration)
 	}, [reportData])
+
+	if (initializing) {
+		return <Loader />
+	}
+
+	if (!appInstallContext) {
+		return (
+			<div className="mt-40 flex h-full w-full items-center justify-center">
+				<p>Unable to connect to Agility CMS.</p>
+			</div>
+		)
+	}
 
 	const renderReport = () => {
 		if (reportData) {
