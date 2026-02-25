@@ -101,7 +101,7 @@ export default function HomeDashboard() {
 						setError("There was a problem accessing Google Analytics.")
 					}
 				})
-				.catch((error) => {
+				.catch(() => {
 					setOAuthToken(token)
 				})
 			setProfileId(appInstallContext.configuration["profileId"])
@@ -124,7 +124,7 @@ export default function HomeDashboard() {
 					setError("There was a problem accessing the report data.")
 				}
 			})
-			.catch((error) => {
+			.catch(() => {
 				setError("There was a problem accessing the the report data.")
 			})
 	}, [duration, oAuthToken, profileId])
