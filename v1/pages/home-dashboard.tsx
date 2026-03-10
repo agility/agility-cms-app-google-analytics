@@ -29,16 +29,21 @@ function getCumulativeSingleMetric(report: Report, index: number) {
 /**
  * Session duration in Milliseconds
  * @param report
+ * @param duration
  * @returns
  */
-function getCumulativeSessionDuration(report: Report) {
+function getCumulativeSessionDuration(report: Report, duration: string) {
 	let cumulativeSessionDuration = 0
 	if (!report?.rows) return "0"
 	report.rows.forEach((row) => {
 		cumulativeSessionDuration += parseInt(row.metricValues[3].value)
 	})
 
-	const val = cumulativeSessionDuration / report.rows.length
+	// When 365daysAgo is selected, data is grouped by month (12 rows) rather than
+	// by day, so we must divide by 365 days instead of report.rows.length to get
+	// the correct daily average engagement time.
+	const divisor = duration === CHART_DURATIONS["365daysAgo"] ? 365 : report.rows.length
+	const val = cumulativeSessionDuration / divisor
 	const dur = Duration.fromMillis(val)
 	if (val > 60000) {
 		return dur.toFormat("m'm' s's'")
@@ -136,7 +141,7 @@ export default function HomeDashboard() {
 		const cumulativeActiveUsers = getCumulativeSingleMetric(reportData, 0)
 		const cumulativeNewUsers = getCumulativeSingleMetric(reportData, 1)
 		const cumulativePageviews = getCumulativeSingleMetric(reportData, 2)
-		const cumulativeSessionDuration = getCumulativeSessionDuration(reportData)
+		const cumulativeSessionDuration = getCumulativeSessionDuration(reportData, duration)
 
 		setCumulativeActiveUsers(cumulativeActiveUsers)
 		setCumulativeNewUsers(cumulativeNewUsers)
