@@ -96,6 +96,10 @@ const LineChartComponent: React.FC<Props> = ({ reportData, isNewUserViewSelected
 		return [value, label]
 	};
 
+	// Force an even tick stride so labels are evenly spaced instead of
+	// Recharts' default auto-hiding, which bunches labels unevenly.
+	const tickInterval = data.length > 15 ? Math.ceil(data.length / 15) - 1 : 0
+
 	useEffect(() => {
 		if(reportData) setIsVisible(true)
 	}, [reportData])
@@ -103,13 +107,13 @@ const LineChartComponent: React.FC<Props> = ({ reportData, isNewUserViewSelected
 	return (
 		<ResponsiveContainer width={"96%"} height={360} className={`transition-opacity duration-650 ${isVisible ? 'opacity-100' : 'opacity-0'}`}>
 			<LineChart data={data}>
-				<XAxis dataKey="date" tickSize={0} tickMargin={16} />
+				<XAxis dataKey="date" tickSize={0} tickMargin={16} interval={tickInterval} />
 				<YAxis axisLine={{ stroke: "transparent" }} tickSize={0} tickMargin={16} />
 				<CartesianGrid horizontal vertical={false} stroke="#eee" />
 				<Tooltip formatter={formatTooltip} labelStyle={{ fontSize: 18, fontWeight:'bold' }}  />
 				{isActiveUserViewSelected ? <Line type="linear" dataKey="users" stroke="#4600AA" dot={false} strokeWidth={3} /> : null}
 				{isNewUserViewSelected ? <Line type="linear" dataKey="newUsers" stroke="#691AD8" dot={false} strokeWidth={3} /> : null}
-				{isPageViewSelected ? <Line type="linear" dataKey="pageViews" stroke="#BC99EE" dot={false} strokeWidth={3} /> : null}q
+				{isPageViewSelected ? <Line type="linear" dataKey="pageViews" stroke="#BC99EE" dot={false} strokeWidth={3} /> : null}
 				{isPageDurationViewSelected ? <Line type="linear" dataKey="avgSessionDuration" stroke="#111827" dot={false} strokeWidth={3} /> : null}
 			</LineChart>
 		</ResponsiveContainer>
