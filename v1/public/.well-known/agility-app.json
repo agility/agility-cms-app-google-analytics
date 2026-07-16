@@ -22,6 +22,9 @@
 		"homeDashboard": {
 			"description": "Shows analytics data for this instance."
 		},
+		"pageSidebar": {
+			"description": "Shows Google Analytics data for the current page."
+		},
 		"installScreen": true
 	}
 }
