@@ -9,7 +9,7 @@ import DurationPicker from "../components/DurationPicker"
 import Loader from "@/components/Loader"
 
 import { CHART_DURATIONS } from "@/constants"
-import { useAgilityAppSDK, setHeight, configMethods, pageMethods, IPageItem } from "@agility/app-sdk"
+import { useAgilityAppSDK, setHeight, configMethods, IPageItem } from "@agility/app-sdk"
 import { IOAuthToken } from "./install"
 
 function getCumulativeSingleMetric(report: Report, index: number) {
@@ -93,8 +93,8 @@ function StatTile({ title, dataDisplay, metricKey, isSelected, setSelected }: St
 export default function PageSidebar() {
 	const { appInstallContext, initializing } = useAgilityAppSDK()
 
-	// The SDK hook's `pageItem` is never populated (it's a no-op in the SDK), so
-	// we request the full page item explicitly via pageMethods.getPageItem().
+	// The SDK hook never exposes `pageItem`, but the host sends it in the
+	// `initialize` response (arg.pageItem). We capture it ourselves below.
 	const [pageItem, setPageItem] = useState<IPageItem | null>(null)
 
 	const [duration, setDuration] = useState(CHART_DURATIONS["7daysAgo"])
@@ -120,14 +120,17 @@ export default function PageSidebar() {
 		setHeight({ height: 640 })
 	}, [])
 
-	// Fetch the current page once the SDK has finished its initialize handshake.
+	// The host delivers the page item as `arg.pageItem` in the initialize
+	// message, which the SDK hook receives but never exposes. Listen for that
+	// message directly and capture the page item ourselves.
 	useEffect(() => {
-		if (initializing) return
-		const result = pageMethods.getPageItem()
-		if (result) {
-			result.then((pi) => setPageItem((pi as IPageItem) ?? null)).catch(() => {})
+		const handler = (e: MessageEvent) => {
+			const pi = e?.data?.arg?.pageItem
+			if (pi) setPageItem(pi as IPageItem)
 		}
-	}, [initializing])
+		window.addEventListener("message", handler)
+		return () => window.removeEventListener("message", handler)
+	}, [])
 
 	// Resolve the OAuth token (refreshing it if expired) and the GA4 property id
 	// from the app configuration, mirroring the home dashboard.
