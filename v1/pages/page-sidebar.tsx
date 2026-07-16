@@ -9,7 +9,7 @@ import DurationPicker from "../components/DurationPicker"
 import Loader from "@/components/Loader"
 
 import { CHART_DURATIONS } from "@/constants"
-import { useAgilityAppSDK, setHeight, configMethods } from "@agility/app-sdk"
+import { useAgilityAppSDK, setHeight, configMethods, pageMethods, IPageItem } from "@agility/app-sdk"
 import { IOAuthToken } from "./install"
 
 function getCumulativeSingleMetric(report: Report, index: number) {
@@ -91,7 +91,11 @@ function StatTile({ title, dataDisplay, metricKey, isSelected, setSelected }: St
 }
 
 export default function PageSidebar() {
-	const { appInstallContext, initializing, pageItem } = useAgilityAppSDK()
+	const { appInstallContext, initializing } = useAgilityAppSDK()
+
+	// The SDK hook's `pageItem` is never populated (it's a no-op in the SDK), so
+	// we request the full page item explicitly via pageMethods.getPageItem().
+	const [pageItem, setPageItem] = useState<IPageItem | null>(null)
 
 	const [duration, setDuration] = useState(CHART_DURATIONS["7daysAgo"])
 	const [reportData, setReportData] = useState<Report | null>(null)
@@ -115,6 +119,15 @@ export default function PageSidebar() {
 	useEffect(() => {
 		setHeight({ height: 640 })
 	}, [])
+
+	// Fetch the current page once the SDK has finished its initialize handshake.
+	useEffect(() => {
+		if (initializing) return
+		const result = pageMethods.getPageItem()
+		if (result) {
+			result.then((pi) => setPageItem((pi as IPageItem) ?? null)).catch(() => {})
+		}
+	}, [initializing])
 
 	// Resolve the OAuth token (refreshing it if expired) and the GA4 property id
 	// from the app configuration, mirroring the home dashboard.
