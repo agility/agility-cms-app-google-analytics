@@ -55,6 +55,20 @@ function normalizePagePath(path: string | null): string {
 	return p
 }
 
+/**
+ * Extract the path portion of a page URL, dropping the origin and query string.
+ * e.g. "https://site.com/product/headless-cms?lang=en-ca" -> "/product/headless-cms"
+ */
+function getPathFromUrl(url: string | null): string {
+	if (!url) return ""
+	try {
+		return new URL(url).pathname
+	} catch {
+		// Not an absolute URL — strip any query string / hash from what we have.
+		return url.split(/[?#]/)[0]
+	}
+}
+
 const metricColors: { [key: string]: string } = {
 	users: "#4600AA",
 	newUsers: "#691AD8",
@@ -114,7 +128,9 @@ export default function PageSidebar() {
 	const [profileId, setProfileId] = useState<string | null>(null)
 	const [error, setError] = useState<string | null>(null)
 
-	const pagePath = normalizePagePath(pageItem?.PagePath ?? null)
+	// The page item's URL is a full preview URL (with query string); derive the
+	// GA `pagePath` from it, falling back to PagePath if URL isn't set.
+	const pagePath = normalizePagePath(getPathFromUrl(pageItem?.URL ?? null) || pageItem?.PagePath || null)
 
 	useEffect(() => {
 		setHeight({ height: 640 })
@@ -126,6 +142,7 @@ export default function PageSidebar() {
 	useEffect(() => {
 		const handler = (e: MessageEvent) => {
 			const pi = e?.data?.arg?.pageItem
+			debugger
 			if (pi) setPageItem(pi as IPageItem)
 		}
 		window.addEventListener("message", handler)
