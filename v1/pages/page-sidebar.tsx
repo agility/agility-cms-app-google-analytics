@@ -3,13 +3,13 @@ import axios from "axios"
 import { Duration } from "luxon"
 import numeral from "numeral"
 
-import LineChartComponent, { Report } from "../components/GoogleLineChart"
-import GoogleAnalyticsLogo from "../components/GoogleAnalyticsLogo"
+import { Report } from "../components/GoogleLineChart"
 import DurationPicker from "../components/DurationPicker"
 import Loader from "@/components/Loader"
+import { LineChart, Line, ResponsiveContainer } from "recharts"
 
 import { CHART_DURATIONS } from "@/constants"
-import { useAgilityAppSDK, setHeight, configMethods, IPageItem } from "@agility/app-sdk"
+import { useAgilityAppSDK, setHeight, configMethods, IPageItem, getManagementAPIToken } from "@agility/app-sdk"
 import { IOAuthToken } from "./install"
 
 function getCumulativeSingleMetric(report: Report, index: number) {
@@ -73,51 +73,86 @@ const metricColors: { [key: string]: string } = {
 	users: "#4600AA",
 	newUsers: "#691AD8",
 	pageViews: "#BC99EE",
-	avgSessionDuration: "#111827"
+	avgSessionDuration: "#111827",
+	bounceRate: "#DB2777"
+}
+
+type MetricCompare = { current: number; previous: number }
+type SourceRow = { channel: string; views: number }
+type PageReport = Report & {
+	compare?: { [metric: string]: MetricCompare }
+	sources?: SourceRow[]
+}
+
+/** Relative % change of current vs previous; null when there is no baseline. */
+function pctChange(cur?: number, prev?: number): number | null {
+	if (cur === undefined || prev === undefined || !prev) return null
+	return ((cur - prev) / prev) * 100
+}
+
+/** Extract a per-interval numeric series for one metric, for the tile sparkline. */
+function getMetricSeries(report: Report | null, index: number): { v: number }[] {
+	if (!report?.rows) return []
+	return report.rows.map((row) => ({ v: parseFloat(row.metricValues[index].value) || 0 }))
 }
 
 interface StatTileProps {
 	title: string
 	dataDisplay: string
 	metricKey: keyof typeof metricColors
-	isSelected: boolean
-	setSelected: (value: boolean) => void
+	series: { v: number }[]
+	delta?: number | null
+	/** For metrics where a decrease is good (e.g. bounce rate), flip the delta color. */
+	invertDelta?: boolean
 }
 
-function StatTile({ title, dataDisplay, metricKey, isSelected, setSelected }: StatTileProps) {
+function StatTile({ title, dataDisplay, metricKey, series, delta, invertDelta }: StatTileProps) {
 	const color = metricColors[metricKey]
+	const hasDelta = delta !== null && delta !== undefined && isFinite(delta)
+	const up = hasDelta && (delta as number) >= 0
+	const isGood = hasDelta ? (invertDelta ? !up : up) : false
 	return (
-		<div
-			onClick={() => setSelected(!isSelected)}
-			className="flex cursor-pointer flex-col justify-between rounded-md border bg-white p-3 transition duration-150 hover:border-gray-300"
-			style={{ borderColor: isSelected ? color : "#e5e7eb" }}
-		>
+		<div className="flex flex-col rounded-md border border-gray-200 bg-white p-3">
 			<span className="text-xs text-dashboard-title">{title}</span>
-			<span className="pt-1 text-xl" style={{ color }}>
-				{dataDisplay}
-			</span>
-			<div
-				className="mt-2 h-1 w-full rounded transition duration-300 ease-in-out"
-				style={{ backgroundColor: isSelected ? color : "transparent" }}
-			/>
+			<div className="flex items-baseline justify-between gap-1">
+				<span className="pt-1 text-xl" style={{ color }}>
+					{dataDisplay}
+				</span>
+				{hasDelta ? (
+					<span className="text-xs font-medium" style={{ color: isGood ? "#059669" : "#dc2626" }}>
+						{up ? "▲" : "▼"} {Math.abs(Math.round(delta as number))}%
+					</span>
+				) : null}
+			</div>
+			<div className="mt-2 h-8 w-full">
+				{series.length > 1 ? (
+					<ResponsiveContainer width="100%" height="100%">
+						<LineChart data={series} margin={{ top: 3, right: 0, bottom: 3, left: 0 }}>
+							<Line
+								type="monotone"
+								dataKey="v"
+								stroke={color}
+								strokeWidth={1.5}
+								dot={false}
+								isAnimationActive={false}
+							/>
+						</LineChart>
+					</ResponsiveContainer>
+				) : null}
+			</div>
 		</div>
 	)
 }
 
 export default function PageSidebar() {
-	const { appInstallContext, initializing } = useAgilityAppSDK()
+	const { appInstallContext, initializing, instance } = useAgilityAppSDK()
 
 	// The SDK hook never exposes `pageItem`, but the host sends it in the
 	// `initialize` response (arg.pageItem). We capture it ourselves below.
 	const [pageItem, setPageItem] = useState<IPageItem | null>(null)
 
 	const [duration, setDuration] = useState(CHART_DURATIONS["7daysAgo"])
-	const [reportData, setReportData] = useState<Report | null>(null)
-
-	const [isActiveUserViewSelected, setIsActiveUserViewSelected] = useState(true)
-	const [isNewUserViewSelected, setIsNewUserViewSelected] = useState(false)
-	const [isPageDurationViewSelected, setIsPageDurationViewSelected] = useState(false)
-	const [isPageViewSelected, setIsPageViewSelected] = useState(false)
+	const [reportData, setReportData] = useState<PageReport | null>(null)
 
 	const [cumulativeActiveUsers, setCumulativeActiveUsers] = useState("0")
 	const [cumulativeNewUsers, setCumulativeNewUsers] = useState("0")
@@ -128,13 +163,37 @@ export default function PageSidebar() {
 	const [profileId, setProfileId] = useState<string | null>(null)
 	const [error, setError] = useState<string | null>(null)
 
-	// The page item's URL is a full preview URL (with query string); derive the
-	// GA `pagePath` from it, falling back to PagePath if URL isn't set.
-	const pagePath = normalizePagePath(getPathFromUrl(pageItem?.URL ?? null) || pageItem?.PagePath || null)
+	const [pagePath, setPagePath] = useState("")
 
 	useEffect(() => {
-		setHeight({ height: 640 })
+		setHeight({ height: 620 })
 	}, [])
+
+	// Resolve the page's real preview URL from the Management API (the init
+	// payload's URL is unreliable), then derive the GA `pagePath` from it.
+	useEffect(() => {
+		const guid = instance?.guid
+		const pageID = pageItem?.ItemContainerID
+		const locale = pageItem?.LanguageCode
+		if (!guid || !pageID || !locale) return
+
+		let cancelled = false
+		;(async () => {
+			try {
+				const token = await getManagementAPIToken()
+				if (!token) return
+				const res = await axios.post("/api/get-page-preview-url", { token, guid, pageID, locale })
+				const url: string = res.data?.previewUrl ?? ""
+				if (!cancelled && url) setPagePath(normalizePagePath(getPathFromUrl(url)))
+			} catch {
+				/* leave pagePath empty; the UI shows a no-path message */
+			}
+		})()
+
+		return () => {
+			cancelled = true
+		}
+	}, [instance?.guid, pageItem?.ItemContainerID, pageItem?.LanguageCode])
 
 	// The host delivers the page item as `arg.pageItem` in the initialize
 	// message, which the SDK hook receives but never exposes. Listen for that
@@ -142,7 +201,6 @@ export default function PageSidebar() {
 	useEffect(() => {
 		const handler = (e: MessageEvent) => {
 			const pi = e?.data?.arg?.pageItem
-			debugger
 			if (pi) setPageItem(pi as IPageItem)
 		}
 		window.addEventListener("message", handler)
@@ -199,7 +257,7 @@ export default function PageSidebar() {
 		})
 			.then((response) => {
 				if (response?.data) {
-					setReportData(response.data as Report)
+					setReportData(response.data as PageReport)
 				} else {
 					setError("There was a problem accessing the report data.")
 				}
@@ -219,7 +277,7 @@ export default function PageSidebar() {
 	}, [reportData])
 
 	if (initializing) {
-		return <Loader />
+		return (<div>hello?</div>)
 	}
 
 	if (!appInstallContext) {
@@ -259,69 +317,100 @@ export default function PageSidebar() {
 			)
 		}
 
+		const compare = reportData.compare ?? {}
+		const bouncePct = Math.round((compare.bounceRate?.current ?? 0) * 100)
+		const sources = reportData.sources ?? []
+		const maxViews = Math.max(...sources.map((s) => s.views), 1)
+
 		return (
 			<>
-				<div className="mb-4 grid grid-cols-2 gap-2">
+				<div className="grid grid-cols-1 gap-4">
 					<StatTile
 						title="Active Users"
 						dataDisplay={cumulativeActiveUsers}
 						metricKey="users"
-						isSelected={isActiveUserViewSelected}
-						setSelected={setIsActiveUserViewSelected}
+						series={getMetricSeries(reportData, 0)}
+						delta={pctChange(compare.activeUsers?.current, compare.activeUsers?.previous)}
 					/>
 					<StatTile
 						title="New Users"
 						dataDisplay={cumulativeNewUsers}
 						metricKey="newUsers"
-						isSelected={isNewUserViewSelected}
-						setSelected={setIsNewUserViewSelected}
+						series={getMetricSeries(reportData, 1)}
+						delta={pctChange(compare.newUsers?.current, compare.newUsers?.previous)}
 					/>
 					<StatTile
 						title="Page Views"
 						dataDisplay={cumulativePageviews}
 						metricKey="pageViews"
-						isSelected={isPageViewSelected}
-						setSelected={setIsPageViewSelected}
+						series={getMetricSeries(reportData, 2)}
+						delta={pctChange(compare.screenPageViews?.current, compare.screenPageViews?.previous)}
 					/>
 					<StatTile
 						title="Avg. Engagement Time"
 						dataDisplay={cumulativeSessionDuration}
 						metricKey="avgSessionDuration"
-						isSelected={isPageDurationViewSelected}
-						setSelected={setIsPageDurationViewSelected}
+						series={getMetricSeries(reportData, 3)}
+						delta={pctChange(compare.userEngagementDuration?.current, compare.userEngagementDuration?.previous)}
+					/>
+					<StatTile
+						title="Bounce Rate"
+						dataDisplay={`${bouncePct}%`}
+						metricKey="bounceRate"
+						series={getMetricSeries(reportData, 4)}
+						delta={pctChange(compare.bounceRate?.current, compare.bounceRate?.previous)}
+						invertDelta
 					/>
 				</div>
-				<LineChartComponent
-					reportData={reportData}
-					isActiveUserViewSelected={isActiveUserViewSelected}
-					isNewUserViewSelected={isNewUserViewSelected}
-					isPageViewSelected={isPageViewSelected}
-					isPageDurationViewSelected={isPageDurationViewSelected}
-					duration={duration}
-				/>
+
+				{sources.length > 0 ? (
+					<div className="mt-4">
+						<span className="text-xs font-medium text-dashboard-title">Top sources</span>
+						<div className="mt-2 flex flex-col gap-1">
+							{sources.map((s) => (
+								<div key={s.channel} className="flex items-center gap-2 text-xs">
+									<span className="w-24 shrink-0 truncate text-gray-500" title={s.channel}>
+										{s.channel}
+									</span>
+									<div className="h-2 flex-1 rounded bg-gray-100">
+										<div
+											className="h-2 rounded"
+											style={{ width: `${(s.views / maxViews) * 100}%`, backgroundColor: "#691AD8" }}
+										/>
+									</div>
+									<span className="w-10 shrink-0 text-right text-gray-500">{numeral(s.views).format("0a")}</span>
+								</div>
+							))}
+						</div>
+					</div>
+				) : null}
+
+				{profileId ? (
+					<a
+						className="mt-4 inline-block text-xs font-medium text-agility-purple hover:underline"
+						href={`https://analytics.google.com/analytics/web/#/p${profileId}/reports/intelligenthome`}
+						target="_blank"
+						rel="noopener noreferrer"
+					>
+						Open in Google Analytics ↗
+					</a>
+				) : null}
 			</>
 		)
 	}
 
 	return (
 		<div className="overflow-hidden p-1">
-			<div className="flex flex-row items-center pb-2">
-				<GoogleAnalyticsLogo />
-				<h1 className="ml-3 text-xl font-medium text-gray-500">Page Analytics</h1>
-			</div>
-
-			{pagePath ? (
-				<p className="mb-3 truncate text-sm text-gray-400" title={pagePath}>
-					{pagePath}
-				</p>
-			) : (
-				<p className="mb-3 text-sm text-gray-400">This page has no path yet.</p>
-			)}
-
-			<div className="mb-4">
+			<div className="justify-between flex w-full mb-4">
+				{pagePath ? (
+					<p className="mb-3 truncate text-lg text-gray-400" title={pagePath}>
+						{pagePath}
+					</p>
+				) : (
+					<p className="mb-3 text-sm text-gray-400">This page has no path yet.</p>
+				)}
 				<DurationPicker onChange={setDuration} currentDuration={duration} />
 			</div>
-
 			{renderBody()}
 		</div>
 	)
