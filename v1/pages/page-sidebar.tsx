@@ -277,7 +277,11 @@ export default function PageSidebar() {
 	}, [reportData])
 
 	if (initializing) {
-		return (<div>hello?</div>)
+		return (
+			<div className="flex h-64 w-full items-center justify-center">
+				<Loader />
+			</div>
+		)
 	}
 
 	if (!appInstallContext) {
